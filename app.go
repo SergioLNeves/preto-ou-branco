@@ -14,6 +14,7 @@ import (
 type App struct {
 	ctx     context.Context
 	gameApp *bindings.GameApp
+	gameSvc *service.GameService
 }
 
 func NewApp() *App {
@@ -26,7 +27,7 @@ func NewApp() *App {
 	svc := service.NewGameService(repo)
 	gameApp := bindings.NewGameApp(svc)
 
-	return &App{gameApp: gameApp}
+	return &App{gameApp: gameApp, gameSvc: svc}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -34,7 +35,6 @@ func (a *App) startup(ctx context.Context) {
 	go a.scheduleDailyAggregation()
 }
 
-// scheduleDailyAggregation runs AggregateDailyResults every day at 03:00 UTC.
 func (a *App) scheduleDailyAggregation() {
 	for {
 		now := time.Now().UTC()
@@ -46,7 +46,7 @@ func (a *App) scheduleDailyAggregation() {
 		select {
 		case <-timer.C:
 			yesterday := next.Add(-24 * time.Hour)
-			if err := a.gameApp.Svc().AggregateDailyResults(a.ctx, yesterday); err != nil {
+			if err := a.gameSvc.AggregateDailyResults(a.ctx, yesterday); err != nil {
 				log.Printf("aggregate daily results: %v", err)
 			}
 		case <-a.ctx.Done():

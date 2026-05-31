@@ -7,6 +7,10 @@ import (
 	"preto-ou-branco/internal/service"
 )
 
+// Service returns the underlying service for internal use (e.g. cron).
+// This is intentionally unexported to avoid exposure to the Wails JS bridge.
+func (g *GameApp) service() *service.GameService { return g.svc }
+
 // GameApp exposes game methods to the Wails frontend.
 // All public methods become TypeScript-callable functions.
 type GameApp struct {
@@ -32,5 +36,3 @@ func (g *GameApp) SubmitVote(questionID string, choice string) (*domain.VoteResu
 func (g *GameApp) TodayResults() ([]domain.DayVotesEntry, error) {
 	return g.svc.GetDayVotes(context.Background())
 }
-
-func (g *GameApp) Svc() *service.GameService { return g.svc }
