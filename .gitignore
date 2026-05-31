@@ -1,0 +1,17 @@
+# Binários compilados
+preto-ou-branco
+build/bin/
+
+# Frontend build e dependências
+frontend/dist/
+frontend/node_modules/
+
+# Gerado pelo Wails (checksum interno)
+frontend/package.json.md5
+
+# TypeScript build info (gerado pelo tsc -b)
+frontend/*.tsbuildinfo
+
+# Gerado pelo Vite ao compilar vite.config.ts
+frontend/vite.config.js
+frontend/vite.config.d.ts
