@@ -1,3 +1,4 @@
+import { Button } from "@/components/shared/ui/button";
 import type { VoteResult } from "@/types/game";
 import { ResultBar } from "./ResultBar";
 
@@ -12,8 +13,7 @@ export function ResultView({ result, isLast, onNext }: ResultViewProps) {
   const dominantPct = dominant === "preto" ? result.pctPreto : result.pctBranco;
   const dominantLabel = dominant === "preto" ? "Preto" : "Branco";
   const textColor = dominant === "preto" ? "#f5f5f5" : "#0a0a0a";
-  const btnBg = dominant === "preto" ? "#f5f5f5" : "#0a0a0a";
-  const btnFg = dominant === "preto" ? "#0a0a0a" : "#f5f5f5";
+  const btnVariant = dominant === "preto" ? "game-white" : "game-black";
 
   const blackFlex = dominant === "preto" ? 2.5 : 0.5;
   const whiteFlex = dominant === "branco" ? 2.5 : 0.5;
@@ -65,14 +65,13 @@ export function ResultView({ result, isLast, onNext }: ResultViewProps) {
           textColor={textColor}
         />
 
-        <button
-          type="button"
+        <Button
+          variant={btnVariant}
           onClick={onNext}
-          className="mt-12 py-[18px] px-14 text-[13px] font-black tracking-[0.3em] uppercase border-2 cursor-pointer hover:-translate-y-0.5 transition-transform"
-          style={{ background: btnBg, color: btnFg, borderColor: btnBg }}
+          className="mt-12 px-14 py-[18px] text-[13px]"
         >
           {isLast ? "Finalizar →" : "Próxima →"}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/shared/ui/button";
 
 const HOW_TO_PLAY = [
   "Você vai receber uma sequência de perguntas aleatórias.",
@@ -73,12 +74,9 @@ export function RulesPanel() {
             </li>
           ))}
         </ul>
-        <Link
-          to="/play"
-          className="mt-4 self-start px-10 py-4 text-[12px] font-extrabold tracking-[0.25em] uppercase bg-[#f5f5f5] text-[#0a0a0a] border-[3px] border-[#0a0a0a] shadow-[4px_4px_0_#0a0a0a] hover:-translate-y-0.5 transition-transform cursor-pointer"
-        >
-          Entendi — Jogar →
-        </Link>
+        <Button variant="game-cta" size="lg" asChild className="mt-4 self-start px-10 text-[12px]">
+          <Link to="/play">Entendi — Jogar →</Link>
+        </Button>
       </div>
     </div>
   );

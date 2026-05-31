@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/shared/ui/button";
 
 export function SplashScreen() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export function SplashScreen() {
         </p>
       </div>
 
-      {/* Center OR badge */}
+      {/* Center OU badge */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
         <div className="w-16 h-16 rounded-full flex items-center justify-center text-[13px] font-extrabold tracking-[0.1em] uppercase bg-[#888] text-[#f5f5f5] border-[3px] border-[#f5f5f5] shadow-[0_0_0_3px_#0a0a0a]">
           OU
@@ -44,19 +45,12 @@ export function SplashScreen() {
 
       {/* Nav buttons */}
       <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-20">
-        <Link
-          to="/rules"
-          className="px-8 py-[18px] text-[12px] font-extrabold tracking-[0.2em] uppercase bg-transparent text-[#f5f5f5] border-2 border-[rgba(245,245,245,0.3)] hover:border-[rgba(245,245,245,0.7)] transition-colors cursor-pointer"
-        >
-          Regras
-        </Link>
-        <button
-          type="button"
-          onClick={handleJogar}
-          className="px-14 py-[18px] text-[14px] font-extrabold tracking-[0.25em] uppercase bg-[#f5f5f5] text-[#0a0a0a] border-[3px] border-[#0a0a0a] shadow-[4px_4px_0_#0a0a0a] hover:-translate-y-0.5 transition-transform cursor-pointer"
-        >
+        <Button variant="game-outline" size="lg" asChild className="px-8 text-[12px]">
+          <Link to="/rules">Regras</Link>
+        </Button>
+        <Button variant="game-cta" size="lg" onClick={handleJogar} className="px-14 text-[14px]">
           Jogar →
-        </button>
+        </Button>
       </div>
     </div>
   );

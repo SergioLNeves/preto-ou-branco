@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/shared/ui/button";
 
 export function NotFoundScreen() {
   return (
@@ -20,12 +21,9 @@ export function NotFoundScreen() {
         Esse endereço não existe
       </p>
 
-      <Link
-        to="/home"
-        className="px-14 py-[18px] text-[13px] font-extrabold tracking-[0.25em] uppercase bg-[#f5f5f5] text-[#0a0a0a] border-[3px] border-[#f5f5f5] shadow-[4px_4px_0_rgba(245,245,245,0.2)] hover:-translate-y-0.5 transition-transform"
-      >
-        Voltar ao início →
-      </Link>
+      <Button variant="game-cta" size="lg" asChild className="px-14 text-[13px]">
+        <Link to="/home">Voltar ao início →</Link>
+      </Button>
     </div>
   );
 }
