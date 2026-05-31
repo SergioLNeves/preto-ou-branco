@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SplashScreen } from "@/components/features/game/SplashScreen";
 
 export const Route = createFileRoute("/home")({
   component: HomeRoute,
@@ -7,9 +8,7 @@ export const Route = createFileRoute("/home")({
 function HomeRoute() {
   return (
     <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#0a0a0a]">
-      <div className="flex h-full items-center justify-center text-white">
-        <p>SplashScreen (em breve)</p>
-      </div>
+      <SplashScreen />
     </div>
   );
 }

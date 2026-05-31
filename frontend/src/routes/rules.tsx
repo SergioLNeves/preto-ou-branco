@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { InnerBackButton } from "@/components/features/game/InnerBackButton";
+import { RulesPanel } from "@/components/features/game/RulesPanel";
 
 export const Route = createFileRoute("/rules")({
   component: RulesRoute,
@@ -7,9 +9,8 @@ export const Route = createFileRoute("/rules")({
 function RulesRoute() {
   return (
     <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#0a0a0a]">
-      <div className="flex h-full items-center justify-center text-white">
-        <p>RulesPanel (em breve)</p>
-      </div>
+      <InnerBackButton to="/home" label="Início" />
+      <RulesPanel />
     </div>
   );
 }
