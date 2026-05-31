@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useCallback, useState } from "react";
+import { toast } from "sonner";
 import { useSubmitVote } from "@/infra/game/mutations";
 import { randomQuestionsQueryOptions } from "@/infra/game/queries";
 import { EngulfTransition } from "@/components/features/game/EngulfTransition";
@@ -36,13 +37,10 @@ function Play() {
   const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
   const [animating, setAnimating] = useState(false);
   const [result, setResult] = useState<VoteResult | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
   const question = questions[currentIndex];
 
   const handleAnswer = useCallback(
     (choice: Choice) => {
-      setSubmitError(null);
       setPendingChoice(choice);
       setAnimating(true);
       setTimeout(async () => {
@@ -55,7 +53,7 @@ function Play() {
           setPhase("result");
         } catch (err) {
           const message = err instanceof Error ? err.message : "Erro ao enviar resposta.";
-          setSubmitError(message);
+          toast.error(message);
           setPendingChoice(null);
         } finally {
           setAnimating(false);
@@ -94,11 +92,6 @@ function Play() {
             onAnswer={handleAnswer}
           />
           <EngulfTransition choice={pendingChoice} animating={animating} />
-          {submitError && (
-            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 px-6 py-3 border border-[rgba(245,245,245,0.3)] bg-[#0a0a0a] text-[#f5f5f5] text-[11px] tracking-[0.2em] uppercase text-center max-w-xs">
-              {submitError}
-            </div>
-          )}
         </>
       )}
 
