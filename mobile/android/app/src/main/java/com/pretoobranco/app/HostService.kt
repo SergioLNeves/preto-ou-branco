@@ -29,19 +29,22 @@ class HostService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Android 12+ exige startForeground em até 5 segundos — chamar antes de qualquer I/O.
+        startForeground(NOTIF_ID, buildNotification())
+
         val dbPath = filesDir.absolutePath + "/app.db"
         val port = 8080
 
-        try {
-            mobile.Mobile.startServer(dbPath, port.toLong())
-            Log.i(TAG, "Go server iniciado em :$port, db=$dbPath")
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao iniciar servidor Go: ${e.message}")
-            stopSelf()
-            return START_NOT_STICKY
-        }
+        Thread {
+            try {
+                mobile.Mobile.startServer(dbPath, port.toLong())
+                Log.i(TAG, "Go server iniciado em :$port, db=$dbPath")
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao iniciar servidor Go: ${e.message}")
+                stopSelf()
+            }
+        }.start()
 
-        startForeground(NOTIF_ID, buildNotification())
         return START_STICKY
     }
 
