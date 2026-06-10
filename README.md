@@ -107,7 +107,7 @@ curl -L -o mobile/android/app/src/main/assets/cloudflared-android-arm \
 Se você quer evitar Android Studio, use o workflow `.github/workflows/android-release.yml`.
 Ele roda com **JDK 21**, que é o necessário para o build Android atual.
 
-1. Crie uma tag de release, por exemplo `android-v1.0.0`, e faça push.
+1. Crie uma tag de release, por exemplo `v1.0.2`, e faça push.
 2. O GitHub Actions baixa o `cloudflared`, gera `preto.aar`, monta o APK e publica o arquivo em **Releases**.
 3. Baixe o `.apk` da release no celular e instale.
 
