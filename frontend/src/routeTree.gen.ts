@@ -9,20 +9,41 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SalaRouteImport } from './routes/sala'
 import { Route as RulesRouteImport } from './routes/rules'
-import { Route as HomeRouteImport } from './routes/home'
+import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as MainRouteImport } from './routes/_main'
 import { Route as GameRouteImport } from './routes/_game'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SalaIndexRouteImport } from './routes/sala/index'
+import { Route as SalaRoomIdRouteImport } from './routes/sala/$roomId'
+import { Route as MainUserRouteImport } from './routes/_main/user'
+import { Route as MainDashboardRouteImport } from './routes/_main/dashboard'
 import { Route as GamePlayRouteImport } from './routes/_game/play'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalaRoute = SalaRouteImport.update({
+  id: '/sala',
+  path: '/sala',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RulesRoute = RulesRouteImport.update({
   id: '/rules',
   path: '/rules',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HomeRoute = HomeRouteImport.update({
-  id: '/home',
-  path: '/home',
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MainRoute = MainRouteImport.update({
+  id: '/_main',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GameRoute = GameRouteImport.update({
@@ -34,6 +55,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalaIndexRoute = SalaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalaRoute,
+} as any)
+const SalaRoomIdRoute = SalaRoomIdRouteImport.update({
+  id: '/$roomId',
+  path: '/$roomId',
+  getParentRoute: () => SalaRoute,
+} as any)
+const MainUserRoute = MainUserRouteImport.update({
+  id: '/user',
+  path: '/user',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainDashboardRoute = MainDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => MainRoute,
+} as any)
 const GamePlayRoute = GamePlayRouteImport.update({
   id: '/play',
   path: '/play',
@@ -42,41 +83,108 @@ const GamePlayRoute = GamePlayRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/home': typeof HomeRoute
+  '/entrar': typeof EntrarRoute
   '/rules': typeof RulesRoute
+  '/sala': typeof SalaRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/play': typeof GamePlayRoute
+  '/dashboard': typeof MainDashboardRoute
+  '/user': typeof MainUserRoute
+  '/sala/$roomId': typeof SalaRoomIdRoute
+  '/sala/': typeof SalaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/home': typeof HomeRoute
+  '/entrar': typeof EntrarRoute
   '/rules': typeof RulesRoute
+  '/settings': typeof SettingsRoute
   '/play': typeof GamePlayRoute
+  '/dashboard': typeof MainDashboardRoute
+  '/user': typeof MainUserRoute
+  '/sala/$roomId': typeof SalaRoomIdRoute
+  '/sala': typeof SalaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_game': typeof GameRouteWithChildren
-  '/home': typeof HomeRoute
+  '/_main': typeof MainRouteWithChildren
+  '/entrar': typeof EntrarRoute
   '/rules': typeof RulesRoute
+  '/sala': typeof SalaRouteWithChildren
+  '/settings': typeof SettingsRoute
   '/_game/play': typeof GamePlayRoute
+  '/_main/dashboard': typeof MainDashboardRoute
+  '/_main/user': typeof MainUserRoute
+  '/sala/$roomId': typeof SalaRoomIdRoute
+  '/sala/': typeof SalaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/home' | '/rules' | '/play'
+  fullPaths:
+    | '/'
+    | '/entrar'
+    | '/rules'
+    | '/sala'
+    | '/settings'
+    | '/play'
+    | '/dashboard'
+    | '/user'
+    | '/sala/$roomId'
+    | '/sala/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/home' | '/rules' | '/play'
-  id: '__root__' | '/' | '/_game' | '/home' | '/rules' | '/_game/play'
+  to:
+    | '/'
+    | '/entrar'
+    | '/rules'
+    | '/settings'
+    | '/play'
+    | '/dashboard'
+    | '/user'
+    | '/sala/$roomId'
+    | '/sala'
+  id:
+    | '__root__'
+    | '/'
+    | '/_game'
+    | '/_main'
+    | '/entrar'
+    | '/rules'
+    | '/sala'
+    | '/settings'
+    | '/_game/play'
+    | '/_main/dashboard'
+    | '/_main/user'
+    | '/sala/$roomId'
+    | '/sala/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GameRoute: typeof GameRouteWithChildren
-  HomeRoute: typeof HomeRoute
+  MainRoute: typeof MainRouteWithChildren
+  EntrarRoute: typeof EntrarRoute
   RulesRoute: typeof RulesRoute
+  SalaRoute: typeof SalaRouteWithChildren
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sala': {
+      id: '/sala'
+      path: '/sala'
+      fullPath: '/sala'
+      preLoaderRoute: typeof SalaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rules': {
       id: '/rules'
       path: '/rules'
@@ -84,11 +192,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RulesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/home': {
-      id: '/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_main': {
+      id: '/_main'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof MainRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_game': {
@@ -104,6 +219,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/sala/': {
+      id: '/sala/'
+      path: '/'
+      fullPath: '/sala/'
+      preLoaderRoute: typeof SalaIndexRouteImport
+      parentRoute: typeof SalaRoute
+    }
+    '/sala/$roomId': {
+      id: '/sala/$roomId'
+      path: '/$roomId'
+      fullPath: '/sala/$roomId'
+      preLoaderRoute: typeof SalaRoomIdRouteImport
+      parentRoute: typeof SalaRoute
+    }
+    '/_main/user': {
+      id: '/_main/user'
+      path: '/user'
+      fullPath: '/user'
+      preLoaderRoute: typeof MainUserRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/dashboard': {
+      id: '/_main/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof MainDashboardRouteImport
+      parentRoute: typeof MainRoute
     }
     '/_game/play': {
       id: '/_game/play'
@@ -125,11 +268,38 @@ const GameRouteChildren: GameRouteChildren = {
 
 const GameRouteWithChildren = GameRoute._addFileChildren(GameRouteChildren)
 
+interface MainRouteChildren {
+  MainDashboardRoute: typeof MainDashboardRoute
+  MainUserRoute: typeof MainUserRoute
+}
+
+const MainRouteChildren: MainRouteChildren = {
+  MainDashboardRoute: MainDashboardRoute,
+  MainUserRoute: MainUserRoute,
+}
+
+const MainRouteWithChildren = MainRoute._addFileChildren(MainRouteChildren)
+
+interface SalaRouteChildren {
+  SalaRoomIdRoute: typeof SalaRoomIdRoute
+  SalaIndexRoute: typeof SalaIndexRoute
+}
+
+const SalaRouteChildren: SalaRouteChildren = {
+  SalaRoomIdRoute: SalaRoomIdRoute,
+  SalaIndexRoute: SalaIndexRoute,
+}
+
+const SalaRouteWithChildren = SalaRoute._addFileChildren(SalaRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GameRoute: GameRouteWithChildren,
-  HomeRoute: HomeRoute,
+  MainRoute: MainRouteWithChildren,
+  EntrarRoute: EntrarRoute,
   RulesRoute: RulesRoute,
+  SalaRoute: SalaRouteWithChildren,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

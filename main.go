@@ -12,7 +12,7 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
+	app := NewApp(assets)
 
 	err := wails.Run(&options.App{
 		Title:  "Preto ou Branco",
@@ -25,6 +25,9 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app.gameApp,
+			app.authApp,
+			app.serverApp,
+			app,
 		},
 	})
 

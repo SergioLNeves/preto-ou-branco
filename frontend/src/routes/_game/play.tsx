@@ -28,7 +28,7 @@ function PlayLoading() {
 type Phase = "question" | "result";
 
 function Play() {
-  const navigate = useNavigate({ from: "/_game/play" });
+  const navigate = useNavigate();
   const { data: questions } = useSuspenseQuery(randomQuestionsQueryOptions);
   const submitVote = useSubmitVote();
 
@@ -52,7 +52,8 @@ function Play() {
           setResult(res);
           setPhase("result");
         } catch (err) {
-          const message = err instanceof Error ? err.message : "Erro ao enviar resposta.";
+          const message =
+            err instanceof Error ? err.message : "Erro ao enviar resposta.";
           toast.error(message);
           setPendingChoice(null);
         } finally {
@@ -66,7 +67,7 @@ function Play() {
   const handleNext = useCallback(() => {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= questions.length) {
-      void navigate({ to: "/home" });
+      void navigate({ to: "/" });
     } else {
       setCurrentIndex(nextIndex);
       setPhase("question");
@@ -76,7 +77,7 @@ function Play() {
   }, [currentIndex, questions.length, navigate]);
 
   if (!question) {
-    void navigate({ to: "/home" });
+    void navigate({ to: "/" });
     return null;
   }
 
@@ -85,6 +86,7 @@ function Play() {
       {phase === "question" && (
         <>
           <QuestionCard
+            key={question.id}
             question={question}
             currentIndex={currentIndex}
             total={questions.length}

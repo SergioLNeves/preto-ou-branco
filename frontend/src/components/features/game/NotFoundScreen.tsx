@@ -6,7 +6,7 @@ export function NotFoundScreen() {
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] text-[#f5f5f5] font-sans">
       <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(136,136,136,0.6)] to-transparent animate-[scan_4s_ease-in-out_infinite] pointer-events-none z-10" />
 
-      <span className="text-[10px] font-extrabold tracking-[0.4em] uppercase opacity-40 mb-8">
+      <span className="text-xs font-extrabold tracking-[0.4em] uppercase opacity-60 mb-8">
         Página não encontrada
       </span>
 
@@ -21,8 +21,8 @@ export function NotFoundScreen() {
         Esse endereço não existe
       </p>
 
-      <Button variant="game-cta" size="lg" asChild className="px-14 text-[13px]">
-        <Link to="/home">Voltar ao início →</Link>
+      <Button variant="game-cta" size="lg" asChild className="px-14 text-sm">
+        <Link to="/">Voltar ao início →</Link>
       </Button>
     </div>
   );

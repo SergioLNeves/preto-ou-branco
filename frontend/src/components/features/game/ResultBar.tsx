@@ -19,7 +19,7 @@ export function ResultBar({ pctPreto, pctBranco, textColor }: ResultBarProps) {
   return (
     <div className="w-[clamp(240px,32vw,420px)] mt-9">
       <div
-        className="flex justify-between text-[10px] font-extrabold tracking-[0.3em] uppercase mb-2"
+        className="flex justify-between text-xs font-extrabold tracking-[0.3em] uppercase mb-2"
         style={{ color: muted }}
       >
         <span>⬛ Preto</span>
@@ -36,7 +36,7 @@ export function ResultBar({ pctPreto, pctBranco, textColor }: ResultBarProps) {
         />
       </div>
       <div
-        className="flex justify-between text-[10px] font-extrabold tracking-[0.2em] mt-1.5"
+        className="flex justify-between text-xs font-extrabold tracking-[0.2em] mt-1.5"
         style={{ color: muted }}
       >
         <span>{pctPreto}%</span>

@@ -1,7 +1,14 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { SplashScreen } from "@/components/features/game/SplashScreen";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: () => {
-    throw redirect({ to: "/home" });
-  },
+  component: HomeRoute,
 });
+
+function HomeRoute() {
+  return (
+    <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#0a0a0a]">
+      <SplashScreen />
+    </div>
+  );
+}

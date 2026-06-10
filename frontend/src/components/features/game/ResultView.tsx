@@ -15,8 +15,8 @@ export function ResultView({ result, isLast, onNext }: ResultViewProps) {
   const textColor = dominant === "preto" ? "#f5f5f5" : "#0a0a0a";
   const btnVariant = dominant === "preto" ? "game-white" : "game-black";
 
-  const blackFlex = dominant === "preto" ? 2.5 : 0.5;
-  const whiteFlex = dominant === "branco" ? 2.5 : 0.5;
+  const blackFlex = result.pctPreto;
+  const whiteFlex = result.pctBranco;
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -68,7 +68,7 @@ export function ResultView({ result, isLast, onNext }: ResultViewProps) {
         <Button
           variant={btnVariant}
           onClick={onNext}
-          className="mt-12 px-14 py-[18px] text-[13px]"
+          className="mt-12 px-14 py-[18px] text-sm"
         >
           {isLast ? "Finalizar →" : "Próxima →"}
         </Button>
