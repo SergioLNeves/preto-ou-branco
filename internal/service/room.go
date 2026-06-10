@@ -2,15 +2,12 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
 	"time"
 
 	"github.com/google/uuid"
 
 	"preto-ou-branco/internal/domain"
 )
-
-const roomCodeCharset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 type RoomService struct {
 	repo    domain.RoomRepository
@@ -25,17 +22,6 @@ type RoomHub interface {
 
 func NewRoomService(repo domain.RoomRepository, gameSvc domain.GameService, hub RoomHub) *RoomService {
 	return &RoomService{repo: repo, gameSvc: gameSvc, hub: hub}
-}
-
-func generateCode() (string, error) {
-	b := make([]byte, 6)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	for i := range b {
-		b[i] = roomCodeCharset[int(b[i])%len(roomCodeCharset)]
-	}
-	return string(b), nil
 }
 
 func (s *RoomService) resolveParticipant(ctx context.Context, roomID string, viewer domain.RoomViewer) (*domain.RoomParticipant, error) {
@@ -91,7 +77,6 @@ func (s *RoomService) buildState(ctx context.Context, room *domain.Room, viewer 
 
 	return &domain.RoomState{
 		RoomID:               room.ID,
-		Code:                 room.Code,
 		Phase:                room.Phase,
 		QuestionCount:        room.QuestionCount,
 		MyVotedCount:         myVotedCount,
@@ -111,7 +96,7 @@ func (s *RoomService) CloseRoom(ctx context.Context, roomID, hostUserID string) 
 	if room.HostUserID != hostUserID {
 		return domain.ErrNotHost
 	}
-	if room.Phase != domain.PhaseLobby {
+	if room.Phase == domain.PhasePlaying || room.Phase == domain.PhaseWaiting {
 		return domain.ErrPhaseMismatch
 	}
 	s.hub.Broadcast(roomID, map[string]any{"type": "room_closed"})
@@ -149,22 +134,9 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 		req.QuestionCount = 10
 	}
 
-	var code string
-	for {
-		c, err := generateCode()
-		if err != nil {
-			return nil, err
-		}
-		if _, err := s.repo.FindRoomByCode(ctx, c); err == domain.ErrRoomNotFound {
-			code = c
-			break
-		}
-	}
-
 	now := time.Now().UTC()
 	room := &domain.Room{
 		ID:            uuid.New().String(),
-		Code:          code,
 		HostUserID:    hostUserID,
 		QuestionCount: req.QuestionCount,
 		Phase:         domain.PhaseLobby,
@@ -203,9 +175,9 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 }
 
 func (s *RoomService) JoinRoom(ctx context.Context, req domain.JoinRoomRequest, viewer domain.RoomViewer) (*domain.RoomState, error) {
-	room, err := s.repo.FindRoomByCode(ctx, req.Code)
+	room, err := s.repo.FindRoomByID(ctx, req.RoomID)
 	if err != nil {
-		return nil, domain.ErrRoomCodeInvalid
+		return nil, domain.ErrRoomNotFound
 	}
 
 	// Reconnect: authenticated user
@@ -376,6 +348,45 @@ func (s *RoomService) ForceAdvanceReveal(ctx context.Context, roomID, hostUserID
 		return domain.ErrHostOverrideLocked
 	}
 	s.transitionToFinished(ctx, room)
+	return nil
+}
+
+func (s *RoomService) RestartRoom(ctx context.Context, roomID, hostUserID string) error {
+	room, err := s.repo.FindRoomByID(ctx, roomID)
+	if err != nil {
+		return err
+	}
+	if room.HostUserID != hostUserID {
+		return domain.ErrNotHost
+	}
+	if room.Phase != domain.PhaseFinished {
+		return domain.ErrPhaseMismatch
+	}
+
+	if err := s.repo.DeleteRoomQuestions(ctx, roomID); err != nil {
+		return err
+	}
+
+	questions, err := s.gameSvc.ListRandomQuestions(ctx, room.QuestionCount)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.SnapshotQuestions(ctx, roomID, questions); err != nil {
+		return err
+	}
+
+	if err := s.repo.ResetParticipantsFinished(ctx, roomID); err != nil {
+		return err
+	}
+
+	room.Phase = domain.PhaseLobby
+	room.WaitingDeadline = nil
+	room.HostOverrideUnlockAt = nil
+	if err := s.repo.UpdateRoom(ctx, room); err != nil {
+		return err
+	}
+
+	s.hub.Broadcast(roomID, map[string]any{"type": "phase_changed", "payload": map[string]any{"phase": "lobby"}})
 	return nil
 }
 

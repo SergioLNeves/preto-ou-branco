@@ -24,7 +24,6 @@ func NewRoomRepo(db *gorm.DB) *RoomRepo {
 func toRoom(r sqlite.RoomTable) *domain.Room {
 	return &domain.Room{
 		ID:                   r.ID,
-		Code:                 r.Code,
 		HostUserID:           r.HostUserID,
 		QuestionCount:        r.QuestionCount,
 		Phase:                domain.RoomPhase(r.Phase),
@@ -52,7 +51,6 @@ func toParticipant(p sqlite.RoomParticipantTable) *domain.RoomParticipant {
 func (r *RoomRepo) CreateRoom(ctx context.Context, room *domain.Room) error {
 	row := sqlite.RoomTable{
 		ID:            room.ID,
-		Code:          room.Code,
 		HostUserID:    room.HostUserID,
 		QuestionCount: room.QuestionCount,
 		Phase:         string(room.Phase),
@@ -60,18 +58,6 @@ func (r *RoomRepo) CreateRoom(ctx context.Context, room *domain.Room) error {
 		UpdatedAt:     room.UpdatedAt,
 	}
 	return r.db.WithContext(ctx).Create(&row).Error
-}
-
-func (r *RoomRepo) FindRoomByCode(ctx context.Context, code string) (*domain.Room, error) {
-	var row sqlite.RoomTable
-	err := r.db.WithContext(ctx).Where("code = ?", code).First(&row).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, domain.ErrRoomNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	return toRoom(row), nil
 }
 
 func (r *RoomRepo) FindRoomByID(ctx context.Context, id string) (*domain.Room, error) {
@@ -132,6 +118,12 @@ func (r *RoomRepo) UpdateParticipant(ctx context.Context, p *domain.RoomParticip
 		"has_finished": p.HasFinished,
 		"last_seen_at": time.Now().UTC(),
 	}).Error
+}
+
+func (r *RoomRepo) ResetParticipantsFinished(ctx context.Context, roomID string) error {
+	return r.db.WithContext(ctx).Model(&sqlite.RoomParticipantTable{}).
+		Where("room_id = ?", roomID).
+		Update("has_finished", false).Error
 }
 
 func (r *RoomRepo) FindParticipantByGuestToken(ctx context.Context, token string) (*domain.RoomParticipant, error) {
@@ -224,6 +216,10 @@ func (r *RoomRepo) FindRoomQuestion(ctx context.Context, id string) (*domain.Roo
 		return nil, err
 	}
 	return &domain.RoomQuestion{ID: row.ID, RoomID: row.RoomID, QuestionID: row.QuestionID, QuestionText: row.QuestionText, Order: row.Order}, nil
+}
+
+func (r *RoomRepo) DeleteRoomQuestions(ctx context.Context, roomID string) error {
+	return r.db.WithContext(ctx).Where("room_id = ?", roomID).Delete(&sqlite.RoomQuestionTable{}).Error
 }
 
 func (r *RoomRepo) UpsertVote(ctx context.Context, vote *domain.RoomVote) error {

@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useRoom } from "@/hooks/use-room";
-import { useSubmitRoomVote } from "@/infra/room/mutations";
-import { roomResultsQueryOptions } from "@/infra/room/queries";
+import { useSubmitRoomVote, useJoinRoom } from "@/infra/room/mutations";
+import { roomResultsQueryOptions, roomKeys } from "@/infra/room/queries";
 import { RoomLobby } from "@/components/features/room/RoomLobby";
-import { WaitingForOthers } from "@/components/features/room/WaitingForOthers";
 import { RoomResults } from "@/components/features/room/RoomResults";
+import { WaitingForOthers } from "@/components/features/room/WaitingForOthers";
 import { QuestionCard } from "@/components/features/game/QuestionCard";
-import { EngulfTransition } from "@/components/features/game/EngulfTransition";
+import { Input } from "@/components/shared/ui/input";
 import type { Choice } from "@/types/game";
 
 export const Route = createFileRoute("/sala/$roomId")({
@@ -18,29 +18,34 @@ export const Route = createFileRoute("/sala/$roomId")({
 function RoomPage() {
   const { roomId } = Route.useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: state, isLoading, error } = useRoom(roomId);
   const submitVote = useSubmitRoomVote(roomId);
+  const joinRoom = useJoinRoom();
 
-  const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
-  const [animating, setAnimating] = useState(false);
+  const [username, setUsername] = useState("");
 
   const handleAnswer = useCallback(
-    (choice: Choice) => {
+    async (choice: Choice) => {
       if (!state) return;
       const currentQuestion = state.questions[state.my_voted_count];
       if (!currentQuestion) return;
-      setPendingChoice(choice);
-      setAnimating(true);
-      setTimeout(async () => {
-        try {
-          await submitVote.mutateAsync({ roomQuestionId: currentQuestion.id, choice });
-        } finally {
-          setAnimating(false);
-        }
-      }, 750);
+      try {
+        await submitVote.mutateAsync({ roomQuestionId: currentQuestion.id, choice });
+      } catch {
+        // errors surfaced via submitVote.isError
+      }
     },
     [state, submitVote],
   );
+
+  function handleJoin() {
+    joinRoom.mutate({ roomId, username: username.trim() }, {
+      onSuccess: (newState) => {
+        queryClient.setQueryData(roomKeys.state(roomId), newState);
+      },
+    });
+  }
 
   if (isLoading) {
     return (
@@ -50,7 +55,52 @@ function RoomPage() {
     );
   }
 
-  if (error || !state) {
+  // Room not found (real 404)
+  if (!state && error) {
+    const is404 = (error as { status?: number })?.status === 404 ||
+      (error instanceof Error && error.message?.toLowerCase().includes("not found"));
+
+    // If we can't tell it's a real 404, offer the join form
+    if (!is404) {
+      return (
+        <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#f5f5f5] text-[#0a0a0a]">
+          <div className="w-full h-full flex flex-col items-center justify-center px-8 gap-5">
+            <div className="flex flex-col items-center gap-1 mb-2">
+              <h1 className="text-[clamp(28px,4vw,48px)] font-black tracking-[-0.04em] uppercase leading-none">
+                Preto ou Branco
+              </h1>
+              <span className="text-xs tracking-[0.3em] uppercase opacity-60">Entre na sala</span>
+            </div>
+            <div className="flex flex-col gap-3 w-full max-w-[220px]">
+              <Input
+                type="text"
+                placeholder="Seu nome"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && username.trim()) handleJoin(); }}
+                maxLength={24}
+                autoFocus
+                className="bg-transparent border-[rgba(10,10,10,0.3)] text-[#0a0a0a] placeholder:text-[rgba(10,10,10,0.3)] focus-visible:border-[#0a0a0a] focus-visible:ring-[rgba(10,10,10,0.15)] rounded-none h-11 text-sm"
+              />
+              {joinRoom.error && (
+                <p className="text-xs tracking-[0.15em] uppercase text-[rgba(10,10,10,0.6)]">
+                  {joinRoom.error instanceof Error ? joinRoom.error.message : "Erro ao entrar"}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleJoin}
+                disabled={joinRoom.isPending || !username.trim()}
+                className="py-3 text-xs font-extrabold tracking-[0.25em] uppercase bg-[#0a0a0a] text-[#f5f5f5] disabled:opacity-40 hover:-translate-y-0.5 transition-transform cursor-pointer"
+              >
+                {joinRoom.isPending ? "Entrando..." : "Entrar →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="game-root fixed inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] text-[#f5f5f5] font-sans gap-4">
         <p className="text-xs tracking-[0.3em] uppercase opacity-70">Sala não encontrada</p>
@@ -64,6 +114,8 @@ function RoomPage() {
       </div>
     );
   }
+
+  if (!state) return null;
 
   return (
     <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#0a0a0a]">
@@ -81,27 +133,26 @@ function RoomPage() {
               question={{ id: currentQuestion.id, category_id: "", text: currentQuestion.text }}
               currentIndex={state.my_voted_count}
               total={state.question_count}
-              disabled={animating || submitVote.isPending}
+              disabled={submitVote.isPending}
               onAnswer={handleAnswer}
             />
-            <EngulfTransition choice={pendingChoice} animating={animating} />
           </div>
         );
       })()}
 
-      {state.phase === "finished" && <FinishedPhase roomId={roomId} />}
+      {state.phase === "finished" && <FinishedPhase roomId={roomId} state={state} />}
     </div>
   );
 }
 
-function FinishedPhase({ roomId }: { roomId: string }) {
+function FinishedPhase({ roomId, state }: { roomId: string; state: ReturnType<typeof useRoom>["data"] }) {
   const { data: results, isLoading } = useQuery(roomResultsQueryOptions(roomId));
-  if (isLoading || !results) {
+  if (isLoading || !results || !state) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a] text-[rgba(245,245,245,0.6)] text-xs tracking-[0.3em] uppercase">
         Calculando resultados...
       </div>
     );
   }
-  return <RoomResults results={results} />;
+  return <RoomResults results={results} state={state} />;
 }

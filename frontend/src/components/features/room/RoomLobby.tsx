@@ -40,7 +40,7 @@ export function RoomLobby({ state }: Props) {
 
   const shareLink =
     isWails() && serverStatus?.active && serverStatus.public_url
-      ? `${serverStatus.public_url}/#/sala?code=${state.code}`
+      ? `${serverStatus.public_url}/#/sala/${state.room_id}`
       : null;
 
   const avatarSize: "sm" | "md" | "lg" =
@@ -91,14 +91,9 @@ export function RoomLobby({ state }: Props) {
             </span>
           </>
         ) : (
-          <>
-            <span className="text-xs tracking-[0.4em] uppercase text-[rgba(245,245,245,0.6)]">
-              Código da Sala
-            </span>
-            <span className="text-[clamp(40px,6vw,72px)] font-black tracking-[0.25em] uppercase text-[#f5f5f5]">
-              {state.code}
-            </span>
-          </>
+          <span className="text-xs tracking-[0.3em] uppercase text-[rgba(245,245,245,0.4)]">
+            Compartilhe o link da sala com os jogadores
+          </span>
         )}
       </div>
 

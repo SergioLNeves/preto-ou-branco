@@ -15,7 +15,6 @@ export interface RoomQuestion {
 
 export interface RoomState {
   room_id: string;
-  code: string;
   phase: RoomPhase;
   question_count: number;
   my_voted_count: number;

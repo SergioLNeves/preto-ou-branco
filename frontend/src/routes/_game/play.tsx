@@ -4,7 +4,6 @@ import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useSubmitVote } from "@/infra/game/mutations";
 import { randomQuestionsQueryOptions } from "@/infra/game/queries";
-import { EngulfTransition } from "@/components/features/game/EngulfTransition";
 import { QuestionCard } from "@/components/features/game/QuestionCard";
 import { ResultView } from "@/components/features/game/ResultView";
 import type { Choice, VoteResult } from "@/types/game";
@@ -34,32 +33,23 @@ function Play() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>("question");
-  const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
-  const [animating, setAnimating] = useState(false);
   const [result, setResult] = useState<VoteResult | null>(null);
   const question = questions[currentIndex];
 
   const handleAnswer = useCallback(
-    (choice: Choice) => {
-      setPendingChoice(choice);
-      setAnimating(true);
-      setTimeout(async () => {
-        try {
-          const res = await submitVote.mutateAsync({
-            questionId: question.id,
-            choice,
-          });
-          setResult(res);
-          setPhase("result");
-        } catch (err) {
-          const message =
-            err instanceof Error ? err.message : "Erro ao enviar resposta.";
-          toast.error(message);
-          setPendingChoice(null);
-        } finally {
-          setAnimating(false);
-        }
-      }, 750);
+    async (choice: Choice) => {
+      try {
+        const res = await submitVote.mutateAsync({
+          questionId: question.id,
+          choice,
+        });
+        setResult(res);
+        setPhase("result");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Erro ao enviar resposta.";
+        toast.error(message);
+      }
     },
     [question, submitVote],
   );
@@ -72,7 +62,6 @@ function Play() {
       setCurrentIndex(nextIndex);
       setPhase("question");
       setResult(null);
-      setPendingChoice(null);
     }
   }, [currentIndex, questions.length, navigate]);
 
@@ -84,17 +73,14 @@ function Play() {
   return (
     <div className="absolute inset-0">
       {phase === "question" && (
-        <>
-          <QuestionCard
-            key={question.id}
-            question={question}
-            currentIndex={currentIndex}
-            total={questions.length}
-            disabled={animating || submitVote.isPending}
-            onAnswer={handleAnswer}
-          />
-          <EngulfTransition choice={pendingChoice} animating={animating} />
-        </>
+        <QuestionCard
+          key={question.id}
+          question={question}
+          currentIndex={currentIndex}
+          total={questions.length}
+          disabled={submitVote.isPending}
+          onAnswer={handleAnswer}
+        />
       )}
 
       {phase === "result" && result && (

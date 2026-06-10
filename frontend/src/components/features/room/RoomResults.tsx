@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useRestartRoom, useCloseRoom } from "@/infra/room/mutations";
 import type { RoomResults, ScoreboardEntry } from "@/types/room";
+import type { RoomState } from "@/types/room";
 
 interface Props {
   results: RoomResults;
+  state: RoomState;
 }
 
 const STEP_INTERVAL = 2200;
 const WINNER_DELAY = 1500;
 
-export function RoomResults({ results }: Props) {
+export function RoomResults({ results, state }: Props) {
   const navigate = useNavigate();
   const { steps, scoreboard } = results;
 
@@ -72,7 +75,14 @@ export function RoomResults({ results }: Props) {
   const step = currentStep >= 0 && currentStep < steps.length ? steps[currentStep] : null;
 
   if (phase === "winner") {
-    return <WinnerScreen sorted={sorted} scores={scores} onDashboard={() => void navigate({ to: "/dashboard" })} />;
+    return (
+      <WinnerScreen
+        sorted={sorted}
+        scores={scores}
+        state={state}
+        onLeave={() => void navigate({ to: "/dashboard" })}
+      />
+    );
   }
 
   return (
@@ -154,15 +164,20 @@ export function RoomResults({ results }: Props) {
 interface WinnerProps {
   sorted: ScoreboardEntry[];
   scores: Record<string, number>;
-  onDashboard: () => void;
+  state: RoomState;
+  onLeave: () => void;
 }
 
-function WinnerScreen({ sorted, scores, onDashboard }: WinnerProps) {
+function WinnerScreen({ sorted, scores, state, onLeave }: WinnerProps) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  const isHost = state.my_participant?.is_host;
+  const restartRoom = useRestartRoom(state.room_id);
+  const closeRoom = useCloseRoom(state.room_id);
 
   const first = sorted[0];
   const second = sorted[1];
@@ -214,14 +229,42 @@ function WinnerScreen({ sorted, scores, onDashboard }: WinnerProps) {
         </div>
       )}
 
-      {/* Footer */}
-      <button
-        type="button"
-        onClick={onDashboard}
-        className="px-10 py-3 text-xs font-extrabold tracking-[0.25em] uppercase border-2 border-[rgba(245,245,245,0.4)] text-[rgba(245,245,245,0.6)] hover:border-[rgba(245,245,245,0.9)] hover:text-[#f5f5f5] transition-colors cursor-pointer"
-      >
-        Dashboard
-      </button>
+      {/* Footer actions */}
+      <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+        {isHost ? (
+          <>
+            <button
+              type="button"
+              onClick={() => restartRoom.mutate()}
+              disabled={restartRoom.isPending}
+              className="w-full py-3 text-xs font-extrabold tracking-[0.25em] uppercase bg-[#f5f5f5] text-[#0a0a0a] disabled:opacity-40 hover:-translate-y-0.5 transition-transform cursor-pointer"
+            >
+              {restartRoom.isPending ? "Reiniciando..." : "Nova rodada →"}
+            </button>
+            <button
+              type="button"
+              onClick={() => closeRoom.mutate(undefined, { onSuccess: onLeave })}
+              disabled={closeRoom.isPending}
+              className="w-full py-3 text-xs font-extrabold tracking-[0.25em] uppercase border border-[rgba(245,245,245,0.3)] text-[rgba(245,245,245,0.5)] hover:border-[rgba(245,245,245,0.7)] hover:text-[rgba(245,245,245,0.8)] disabled:opacity-40 transition-colors cursor-pointer"
+            >
+              {closeRoom.isPending ? "Encerrando..." : "Encerrar sala"}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.4)] animate-pulse text-center">
+              Aguardando o host...
+            </p>
+            <button
+              type="button"
+              onClick={onLeave}
+              className="w-full py-3 text-xs font-extrabold tracking-[0.25em] uppercase border border-[rgba(245,245,245,0.2)] text-[rgba(245,245,245,0.4)] hover:border-[rgba(245,245,245,0.5)] hover:text-[rgba(245,245,245,0.7)] transition-colors cursor-pointer"
+            >
+              Sair
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

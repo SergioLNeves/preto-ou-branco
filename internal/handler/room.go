@@ -59,7 +59,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 		status := http.StatusBadRequest
 		if err == domain.ErrRoomFull {
 			status = http.StatusConflict
-		} else if err == domain.ErrRoomCodeInvalid {
+		} else if err == domain.ErrRoomNotFound {
 			status = http.StatusNotFound
 		} else if err == domain.ErrGameAlreadyStarted {
 			status = http.StatusForbidden
@@ -108,6 +108,21 @@ func (h *RoomHandler) StartRoom(c echo.Context) error {
 	hostUserID := c.Get("user_id").(string)
 	if err := h.svc.StartGame(c.Request().Context(), roomID, hostUserID); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *RoomHandler) RestartRoom(c echo.Context) error {
+	roomID := c.Param("id")
+	hostUserID := c.Get("user_id").(string)
+	if err := h.svc.RestartRoom(c.Request().Context(), roomID, hostUserID); err != nil {
+		status := http.StatusBadRequest
+		if err == domain.ErrNotHost {
+			status = http.StatusForbidden
+		} else if err == domain.ErrPhaseMismatch {
+			status = http.StatusConflict
+		}
+		return c.JSON(status, map[string]string{"error": err.Error()})
 	}
 	return c.NoContent(http.StatusNoContent)
 }

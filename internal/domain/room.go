@@ -11,7 +11,6 @@ const MaxRoomParticipants = 32
 var (
 	ErrRoomNotFound         = fmt.Errorf("room not found")
 	ErrRoomFull             = fmt.Errorf("room is full")
-	ErrRoomCodeInvalid      = fmt.Errorf("invalid room code")
 	ErrNotHost              = fmt.Errorf("only the host can perform this action")
 	ErrAlreadyJoined        = fmt.Errorf("already in this room")
 	ErrPhaseMismatch        = fmt.Errorf("action not allowed in current phase")
@@ -38,7 +37,6 @@ var EmojiPool = []string{
 
 type Room struct {
 	ID                   string
-	Code                 string
 	HostUserID           string
 	QuestionCount        int
 	Phase                RoomPhase
@@ -87,7 +85,7 @@ type UpdateRoomSettingsRequest struct {
 }
 
 type JoinRoomRequest struct {
-	Code     string `json:"code"`
+	RoomID   string `json:"room_id"`
 	Username string `json:"username"`
 }
 
@@ -116,7 +114,6 @@ type RoomQuestionResponse struct {
 
 type RoomState struct {
 	RoomID        string                    `json:"room_id"`
-	Code          string                    `json:"code"`
 	Phase         RoomPhase                 `json:"phase"`
 	QuestionCount int                       `json:"question_count"`
 	MyVotedCount  int                       `json:"my_voted_count"`
@@ -159,6 +156,7 @@ type RoomService interface {
 	StartGame(ctx context.Context, roomID, hostUserID string) error
 	SubmitVote(ctx context.Context, roomID string, req SubmitRoomVoteRequest, viewer RoomViewer) (*RoomState, error)
 	ForceAdvanceReveal(ctx context.Context, roomID, hostUserID string) error
+	RestartRoom(ctx context.Context, roomID, hostUserID string) error
 	GetRoomState(ctx context.Context, roomID string, viewer RoomViewer) (*RoomState, error)
 	GetResults(ctx context.Context, roomID string) (*RoomResults, error)
 	Tick(ctx context.Context)
@@ -166,7 +164,6 @@ type RoomService interface {
 
 type RoomRepository interface {
 	CreateRoom(ctx context.Context, room *Room) error
-	FindRoomByCode(ctx context.Context, code string) (*Room, error)
 	FindRoomByID(ctx context.Context, id string) (*Room, error)
 	UpdateRoom(ctx context.Context, room *Room) error
 	UpdateRoomQuestionCount(ctx context.Context, roomID string, count int) error
@@ -178,9 +175,11 @@ type RoomRepository interface {
 	FindParticipantByUserAndRoom(ctx context.Context, userID, roomID string) (*RoomParticipant, error)
 	FindParticipantByID(ctx context.Context, id string) (*RoomParticipant, error)
 	ListParticipants(ctx context.Context, roomID string) ([]RoomParticipant, error)
+	ResetParticipantsFinished(ctx context.Context, roomID string) error
 	SnapshotQuestions(ctx context.Context, roomID string, questions []QuestionResponse) error
 	ListRoomQuestions(ctx context.Context, roomID string) ([]RoomQuestion, error)
 	FindRoomQuestion(ctx context.Context, id string) (*RoomQuestion, error)
+	DeleteRoomQuestions(ctx context.Context, roomID string) error
 	UpsertVote(ctx context.Context, vote *RoomVote) error
 	CountVotesByParticipant(ctx context.Context, participantID, roomID string) (int, error)
 	ListVotesForQuestion(ctx context.Context, roomQuestionID string) ([]RoomVote, error)

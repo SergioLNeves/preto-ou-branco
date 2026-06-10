@@ -70,7 +70,6 @@ func (UserSessionTable) TableName() string { return "user_session" }
 
 type RoomTable struct {
 	ID                   string    `gorm:"type:varchar(36);primary_key"`
-	Code                 string    `gorm:"type:varchar(8);uniqueIndex;not null"`
 	HostUserID           string    `gorm:"type:varchar(36);not null"`
 	QuestionCount        int       `gorm:"not null"`
 	Phase                string    `gorm:"type:varchar(16);not null;default:'lobby'"`

@@ -96,6 +96,7 @@ func startHTTPServer(
 	rooms.PATCH("/:id/settings", roomHandler.UpdateRoomSettings, bearerAuth)
 	rooms.POST("/:id/start", roomHandler.StartRoom, bearerAuth)
 	rooms.POST("/:id/force-reveal", roomHandler.ForceAdvanceReveal, bearerAuth)
+	rooms.POST("/:id/restart", roomHandler.RestartRoom, bearerAuth)
 	rooms.GET("/:id/state", roomHandler.GetRoomState, roomIdentity)
 	rooms.GET("/:id/results", roomHandler.GetRoomResults, roomIdentity)
 	rooms.POST("/:id/vote", roomHandler.SubmitRoomVote, roomIdentity)

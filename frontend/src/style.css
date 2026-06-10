@@ -89,11 +89,6 @@ html, body, #root {
   }
 }
 
-@keyframes engulf {
-  0%   { clip-path: circle(0% at 50% 60%); opacity: 1; }
-  100% { clip-path: circle(150% at 50% 60%); opacity: 1; }
-}
-
 @keyframes scan {
   0%   { top: 10%; opacity: 0; }
   10%  { opacity: 1; }

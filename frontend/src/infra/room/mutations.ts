@@ -12,8 +12,8 @@ export function useCreateRoom() {
 
 export function useJoinRoom() {
   return useMutation({
-    mutationFn: async ({ code, username }: { code: string; username: string }) => {
-      const state = await apiPost<RoomState>("/v1/rooms/join", { code, username });
+    mutationFn: async ({ roomId, username }: { roomId: string; username: string }) => {
+      const state = await apiPost<RoomState>("/v1/rooms/join", { room_id: roomId, username });
       if (state.guest_token) {
         localStorage.setItem("room_guest_token", state.guest_token);
       }
@@ -41,6 +41,14 @@ export function useStartRoom(roomId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiPost<void>(`/v1/rooms/${roomId}/start`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: roomKeys.state(roomId) }),
+  });
+}
+
+export function useRestartRoom(roomId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost<void>(`/v1/rooms/${roomId}/restart`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: roomKeys.state(roomId) }),
   });
 }
