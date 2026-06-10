@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { InnerBackButton } from "@/components/features/game/InnerBackButton";
-import { GetServerStatus, StopTunnel } from "../../wailsjs/go/bindings/ServerApp";
+import { hostBridge, type ServerStatus } from "@/lib/host-bridge";
 import { clearServerBaseURL } from "@/lib/server-url";
 
 export const Route = createFileRoute("/settings")({
@@ -11,15 +11,16 @@ export const Route = createFileRoute("/settings")({
 function SettingsRoute() {
   const qc = useQueryClient();
 
-  const { data: status } = useQuery({
+  const { data: status } = useQuery<ServerStatus>({
     queryKey: ["server-status"],
-    queryFn: GetServerStatus,
-    refetchInterval: 5000,
+    queryFn: hostBridge.getServerStatus,
+    enabled: hostBridge.isHost(),
+    refetchInterval: hostBridge.isHost() ? 5000 : false,
   });
 
   const stopTunnel = useMutation({
     mutationFn: async () => {
-      await StopTunnel();
+      await hostBridge.stopTunnel();
       clearServerBaseURL();
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["server-status"] }),

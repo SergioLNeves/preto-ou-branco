@@ -96,9 +96,6 @@ func (s *RoomService) CloseRoom(ctx context.Context, roomID, hostUserID string) 
 	if room.HostUserID != hostUserID {
 		return domain.ErrNotHost
 	}
-	if room.Phase == domain.PhasePlaying || room.Phase == domain.PhaseWaiting {
-		return domain.ErrPhaseMismatch
-	}
 	s.hub.Broadcast(roomID, map[string]any{"type": "room_closed"})
 	return s.repo.DeleteRoom(ctx, roomID)
 }

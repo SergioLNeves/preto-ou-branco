@@ -9,11 +9,12 @@ interface SwipeCardProps {
   total: number;
   disabled: boolean;
   onAnswer: (choice: Choice) => void;
+  onBack?: (() => void | Promise<void>) | null;
 }
 
 const THRESHOLD = () => Math.min(window.innerHeight * 0.28, 130);
 
-export function SwipeCard({ question, currentIndex, total, disabled, onAnswer }: SwipeCardProps) {
+export function SwipeCard({ question, currentIndex, total, disabled, onAnswer, onBack }: SwipeCardProps) {
   const [dragY, setDragY] = useState(0);
   const [phase, setPhase] = useState<"idle" | "dragging" | "exiting">("idle");
   const startYRef = useRef(0);
@@ -93,16 +94,26 @@ export function SwipeCard({ question, currentIndex, total, disabled, onAnswer }:
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 h-[72px] z-30 flex items-center justify-between px-8 pointer-events-none">
         <div className="flex items-center gap-4">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 text-xs font-bold tracking-[0.25em] uppercase transition-colors shrink-0 pointer-events-auto"
-            style={{ color: topBarTextColor }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M10 3L5 8l5 5" />
-            </svg>
-            Início
-          </Link>
+          {onBack !== null && (() => {
+            const icon = (
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M10 3L5 8l5 5" />
+              </svg>
+            );
+            const baseClass = "flex items-center gap-2 text-xs font-bold tracking-[0.25em] uppercase transition-colors shrink-0 pointer-events-auto";
+            if (onBack !== undefined) {
+              return (
+                <button type="button" onClick={() => void onBack()} className={`${baseClass} cursor-pointer`} style={{ color: topBarTextColor }}>
+                  {icon} Início
+                </button>
+              );
+            }
+            return (
+              <Link to="/dashboard" className={baseClass} style={{ color: topBarTextColor }}>
+                {icon} Início
+              </Link>
+            );
+          })()}
           <div className="w-28 h-0.5 bg-[rgba(128,128,128,0.4)] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full bg-[rgba(128,128,128,0.7)] transition-[width_0.4s_ease]"

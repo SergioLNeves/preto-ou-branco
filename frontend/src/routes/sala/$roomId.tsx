@@ -2,8 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useRoom } from "@/hooks/use-room";
-import { useSubmitRoomVote, useJoinRoom } from "@/infra/room/mutations";
+import { useSubmitRoomVote, useJoinRoom, useCloseRoom } from "@/infra/room/mutations";
 import { roomResultsQueryOptions, roomKeys } from "@/infra/room/queries";
+import { hostBridge } from "@/lib/host-bridge";
 import { RoomLobby } from "@/components/features/room/RoomLobby";
 import { RoomResults } from "@/components/features/room/RoomResults";
 import { WaitingForOthers } from "@/components/features/room/WaitingForOthers";
@@ -22,6 +23,17 @@ function RoomPage() {
   const { data: state, isLoading, error } = useRoom(roomId);
   const submitVote = useSubmitRoomVote(roomId);
   const joinRoom = useJoinRoom();
+  const closeRoom = useCloseRoom(roomId);
+
+  async function handleHostExit() {
+    try {
+      await closeRoom.mutateAsync();
+    } catch {
+      // sala pode já ter sido removida
+    }
+    if (hostBridge.isHost()) await hostBridge.stopTunnel().catch(() => {});
+    void navigate({ to: "/dashboard" });
+  }
 
   const [username, setUsername] = useState("");
 
@@ -135,6 +147,7 @@ function RoomPage() {
               total={state.question_count}
               disabled={submitVote.isPending}
               onAnswer={handleAnswer}
+              onBack={state.my_participant?.is_host ? handleHostExit : null}
             />
           </div>
         );

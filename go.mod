@@ -37,10 +37,16 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/wailsapp/go-webview2 v1.0.23 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
+	golang.org/x/mobile v0.0.0-20260602190626-68735029466e // indirect
+	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.12.0 => /home/sergiolnrodrigues/go/pkg/mod
+
+tool golang.org/x/mobile/cmd/gobind

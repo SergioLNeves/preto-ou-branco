@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+
 const DEFAULT = "http://localhost:8080";
 const KEY = "server_url";
 
@@ -7,10 +9,10 @@ export function isWails(): boolean {
 }
 
 export function getServerBaseURL(): string {
-  // In browser (guest via tunnel), use the current origin — API is on same host
-  if (!isWails()) return window.location.origin;
-  // In Wails (host), always use the local backend — never route via tunnel
-  return DEFAULT;
+  // Wails host or Capacitor native → always local backend
+  if (isWails() || Capacitor.isNativePlatform()) return DEFAULT;
+  // Browser guest via tunnel → API lives on the same origin (served by Go/Echo)
+  return window.location.origin;
 }
 
 export function setServerBaseURL(url: string) {

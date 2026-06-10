@@ -11,6 +11,7 @@ interface QuestionCardProps {
   total: number;
   disabled: boolean;
   onAnswer: (choice: Choice) => void;
+  onBack?: (() => void | Promise<void>) | null;
 }
 
 export function QuestionCard(props: QuestionCardProps) {
@@ -19,7 +20,8 @@ export function QuestionCard(props: QuestionCardProps) {
   return <QuestionCardDesktop {...props} />;
 }
 
-function QuestionCardDesktop({ question, currentIndex, total, disabled, onAnswer }: QuestionCardProps) {
+
+function QuestionCardDesktop({ question, currentIndex, total, disabled, onAnswer, onBack }: QuestionCardProps) {
   const [hovered, setHovered] = useState<Choice | null>(null);
   const [selected, setSelected] = useState<Choice | null>(null);
   const progress = (currentIndex / total) * 100;
@@ -64,20 +66,31 @@ function QuestionCardDesktop({ question, currentIndex, total, disabled, onAnswer
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 h-[72px] z-30 flex overflow-hidden">
         <div className="flex-1 flex items-center px-12 gap-6">
-          <Link
-            to="/dashboard"
-            className={cn(
+          {onBack !== null && (() => {
+            const cls = cn(
               "flex items-center gap-2 text-xs font-bold tracking-[0.25em] uppercase transition-colors shrink-0",
               active === "preto"
                 ? "text-[rgba(245,245,245,0.4)] hover:text-[rgba(245,245,245,0.9)]"
                 : "text-[rgba(10,10,10,0.4)] hover:text-[rgba(10,10,10,0.9)]",
-            )}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M10 3L5 8l5 5" />
-            </svg>
-            Início
-          </Link>
+            );
+            const icon = (
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M10 3L5 8l5 5" />
+              </svg>
+            );
+            if (onBack !== undefined) {
+              return (
+                <button type="button" onClick={() => void onBack()} className={`${cls} cursor-pointer`}>
+                  {icon} Início
+                </button>
+              );
+            }
+            return (
+              <Link to="/dashboard" className={cls}>
+                {icon} Início
+              </Link>
+            );
+          })()}
           <div className="w-32 h-0.5 bg-[rgba(128,128,128,0.3)] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full bg-[rgba(128,128,128,0.6)] transition-[width_0.4s_ease]"

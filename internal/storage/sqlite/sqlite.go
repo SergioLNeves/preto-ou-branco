@@ -31,7 +31,12 @@ func Open() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	return OpenAt(dbPath)
+}
 
+// OpenAt opens (or creates) the database at an explicit path.
+// Used by the mobile build where the Android app provides the files directory.
+func OpenAt(dbPath string) (*gorm.DB, error) {
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return nil, fmt.Errorf("create db directory: %w", err)
 	}

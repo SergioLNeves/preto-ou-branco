@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import QRCode from "react-qr-code";
+import { QrCode } from "lucide-react";
 import { meQueryOptions } from "@/infra/auth/queries";
 import { useStartRoom, useUpdateRoomSettings, useCloseRoom } from "@/infra/room/mutations";
 import { ParticipantAvatar } from "./ParticipantAvatar";
-import { GetServerStatus, StopTunnel } from "../../../../wailsjs/go/bindings/ServerApp";
-import { isWails } from "@/lib/server-url";
+import { hostBridge, type ServerStatus } from "@/lib/host-bridge";
 import type { RoomState } from "@/types/room";
 
 interface Props {
@@ -26,20 +27,21 @@ export function RoomLobby({ state }: Props) {
     } catch {
       // sala pode já ter sido removida, continua
     }
-    if (isWails()) await StopTunnel().catch(() => {});
+    if (hostBridge.isHost()) await hostBridge.stopTunnel().catch(() => {});
     void navigate({ to: "/dashboard" });
   }
   const count = state.participants.length;
   const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
-  const { data: serverStatus } = useQuery({
+  const { data: serverStatus } = useQuery<ServerStatus>({
     queryKey: ["server-status"],
-    queryFn: GetServerStatus,
-    enabled: isWails(),
+    queryFn: hostBridge.getServerStatus,
+    enabled: hostBridge.isHost(),
   });
 
   const shareLink =
-    isWails() && serverStatus?.active && serverStatus.public_url
+    hostBridge.isHost() && serverStatus?.active && serverStatus.public_url
       ? `${serverStatus.public_url}/#/sala/${state.room_id}`
       : null;
 
@@ -75,17 +77,27 @@ export function RoomLobby({ state }: Props) {
             <span className="text-xs tracking-[0.4em] uppercase text-[rgba(245,245,245,0.6)]">
               Link para compartilhar
             </span>
-            <button
-              type="button"
-              onClick={handleCopy}
-              title="Copiar link"
-              className="flex items-center gap-2 px-4 py-2 border border-[rgba(245,245,245,0.2)] hover:border-[rgba(245,245,245,0.5)] transition-colors cursor-pointer max-w-full"
-            >
-              <span className="text-xs font-black tracking-[0.05em] break-all text-left">
-                {shareLink}
-              </span>
-              <span className="text-xs opacity-50 shrink-0">{copied ? "✓" : "⎘"}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopy}
+                title="Copiar link"
+                className="flex items-center gap-2 px-4 py-2 border border-[rgba(245,245,245,0.2)] hover:border-[rgba(245,245,245,0.5)] transition-colors cursor-pointer max-w-[280px]"
+              >
+                <span className="text-xs font-black tracking-[0.05em] truncate text-left">
+                  {shareLink}
+                </span>
+                <span className="text-xs opacity-50 shrink-0">{copied ? "✓" : "⎘"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowQR(true)}
+                title="Ver QR code"
+                className="shrink-0 p-2 border border-[rgba(245,245,245,0.2)] hover:border-[rgba(245,245,245,0.5)] transition-colors cursor-pointer"
+              >
+                <QrCode size={16} className="text-[rgba(245,245,245,0.7)]" />
+              </button>
+            </div>
             <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.6)]">
               clique para copiar
             </span>
@@ -96,6 +108,34 @@ export function RoomLobby({ state }: Props) {
           </span>
         )}
       </div>
+
+      {/* QR modal */}
+      {showQR && shareLink && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.85)]"
+          onClick={() => setShowQR(false)}
+        >
+          <div
+            className="flex flex-col items-center gap-4 bg-[#0a0a0a] border border-[rgba(245,245,245,0.15)] p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-xs tracking-[0.4em] uppercase text-[rgba(245,245,245,0.6)]">
+              Escanear para entrar
+            </span>
+            <div className="p-3 bg-[#f5f5f5]">
+              <QRCode value={shareLink} size={200} bgColor="#f5f5f5" fgColor="#0a0a0a" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowQR(false)}
+              className="text-xs tracking-[0.25em] uppercase text-[rgba(245,245,245,0.5)] hover:text-[rgba(245,245,245,0.9)] transition-colors cursor-pointer"
+            >
+              ✕ Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {/* Settings */}
       <div className="flex flex-col items-center gap-2">

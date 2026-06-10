@@ -25,6 +25,7 @@ export function useRoom(roomId: string) {
   return useQuery({
     ...roomStateQueryOptions(roomId),
     // Polling garante sincronização quando eventos WS passam pelo túnel e chegam com atraso
-    refetchInterval: 3000,
+    refetchInterval: (query) => (query.state.status === "error" ? false : 3000),
+    retry: false,
   });
 }

@@ -15,3 +15,13 @@ frontend/*.tsbuildinfo
 # Gerado pelo Vite ao compilar vite.config.ts
 frontend/vite.config.js
 frontend/vite.config.d.ts
+
+# Android / gomobile
+build/preto.aar
+build/preto-sources.jar
+mobile/node_modules/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/app/libs/preto.aar
+mobile/android/app/src/main/assets/cloudflared-android-arm64

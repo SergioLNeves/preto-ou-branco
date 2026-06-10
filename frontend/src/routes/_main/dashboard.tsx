@@ -3,11 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { meQueryOptions } from "@/infra/auth/queries";
 import { useCreateRoom } from "@/infra/room/mutations";
-import {
-  GetServerStatus,
-  StartTunnel,
-} from "../../../wailsjs/go/bindings/ServerApp";
-import { EventsOn, EventsOff } from "../../../wailsjs/runtime/runtime";
+import { hostBridge, type ServerStatus } from "@/lib/host-bridge";
 
 export const Route = createFileRoute("/_main/dashboard")({
   component: DashboardRoute,
@@ -18,10 +14,11 @@ function DashboardRoute() {
   const qc = useQueryClient();
   const { data: user } = useQuery(meQueryOptions);
 
-  const { data: serverStatus } = useQuery({
+  const { data: serverStatus } = useQuery<ServerStatus>({
     queryKey: ["server-status"],
-    queryFn: GetServerStatus,
-    refetchInterval: 10_000,
+    queryFn: hostBridge.getServerStatus,
+    enabled: hostBridge.isHost(),
+    refetchInterval: hostBridge.isHost() ? 10_000 : false,
   });
 
   const createRoom = useCreateRoom();
@@ -29,11 +26,18 @@ function DashboardRoute() {
   const [loadingMsg, setLoadingMsg] = useState("Preparando servidor...");
   const [serverError, setServerError] = useState("");
 
+  // Wails-only: listen for tunnel progress events emitted by the Go backend
   useEffect(() => {
-    EventsOn("tunnel:progress", (msg: unknown) => {
-      if (typeof msg === "string") setLoadingMsg(msg);
-    });
-    return () => EventsOff("tunnel:progress");
+    if (typeof window === "undefined" || !("go" in window)) return;
+    let off: (() => void) | undefined;
+    void (async () => {
+      const { EventsOn, EventsOff } = await import("../../../wailsjs/runtime/runtime");
+      EventsOn("tunnel:progress", (msg: unknown) => {
+        if (typeof msg === "string") setLoadingMsg(msg);
+      });
+      off = () => EventsOff("tunnel:progress");
+    })();
+    return () => off?.();
   }, []);
 
   function handleSolo() {
@@ -47,7 +51,7 @@ function DashboardRoute() {
       setLoadingMsg("Preparando servidor...");
       setLoading(true);
       try {
-        await StartTunnel();
+        await hostBridge.startTunnel();
         qc.invalidateQueries({ queryKey: ["server-status"] });
       } catch (e) {
         if (typeof e === "string") setServerError(e);
