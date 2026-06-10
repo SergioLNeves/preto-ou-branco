@@ -15,23 +15,24 @@ export function SplashScreen() {
   }
 
   return (
-    <div className="relative w-full h-full flex overflow-hidden">
+    <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
       {/* scan line */}
       <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(136,136,136,0.6)] to-transparent animate-[scan_4s_ease-in-out_infinite] pointer-events-none z-10" />
 
       {/* Black half */}
       <div className="flex-1 flex flex-col items-center justify-center bg-[#0a0a0a] text-[#f5f5f5]">
-        <h1 className="text-[clamp(52px,7vw,96px)] font-black leading-[0.9] tracking-[-0.04em] uppercase select-none">
+        <h1 className="text-[clamp(52px,12vw,96px)] md:text-[clamp(52px,7vw,96px)] font-black leading-[0.9] tracking-[-0.04em] uppercase select-none">
           Preto
         </h1>
       </div>
 
-      {/* Divider */}
-      <div className="w-px flex-shrink-0 bg-gradient-to-b from-transparent via-[#888] to-transparent relative z-10" />
+      {/* Divider — horizontal em portrait, vertical em landscape/desktop */}
+      <div className="h-px w-full flex-shrink-0 bg-gradient-to-r from-transparent via-[#888] to-transparent md:hidden relative z-10" />
+      <div className="hidden md:block w-px flex-shrink-0 bg-gradient-to-b from-transparent via-[#888] to-transparent relative z-10" />
 
       {/* White half */}
       <div className="flex-1 flex flex-col items-center justify-center bg-[#f5f5f5] text-[#0a0a0a]">
-        <h1 className="text-[clamp(52px,7vw,96px)] font-black leading-[0.9] tracking-[-0.04em] uppercase select-none">
+        <h1 className="text-[clamp(52px,12vw,96px)] md:text-[clamp(52px,7vw,96px)] font-black leading-[0.9] tracking-[-0.04em] uppercase select-none">
           Branco
         </h1>
       </div>

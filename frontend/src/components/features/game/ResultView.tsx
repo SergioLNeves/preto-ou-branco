@@ -20,7 +20,7 @@ export function ResultView({ result, isLast, onNext }: ResultViewProps) {
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 flex">
+      <div className="absolute inset-0 flex flex-col md:flex-row">
         <div
           className="bg-[#0a0a0a] transition-[flex_1s_cubic-bezier(0.77,0,0.175,1)]"
           style={{ flex: blackFlex }}

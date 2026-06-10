@@ -26,13 +26,15 @@ export function GameAuthScreen({ onSuccess }: Props) {
   }
 
   return (
-    <div className="relative w-full h-full flex overflow-hidden">
-      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#888] to-transparent z-10 -translate-x-1/2" />
+    <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
+      {/* Divider — horizontal em portrait, vertical em landscape/desktop */}
+      <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[#888] to-transparent z-10 -translate-y-1/2 md:hidden" />
+      <div className="absolute hidden md:block left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#888] to-transparent z-10 -translate-x-1/2" />
 
       {/* Login — dark side */}
       <div className="dark flex-1 flex items-center justify-center bg-[#0a0a0a] text-[#f5f5f5]">
-        <form onSubmit={handleLogin} className="w-[min(240px,80%)] flex flex-col gap-3">
-          <h2 className="text-[clamp(22px,3vw,32px)] font-black tracking-[-0.03em] uppercase mb-1">
+        <form onSubmit={handleLogin} className="w-[min(320px,80%)] md:w-[min(240px,80%)] flex flex-col gap-3">
+          <h2 className="text-[clamp(22px,5vw,32px)] md:text-[clamp(22px,3vw,32px)] font-black tracking-[-0.03em] uppercase mb-1">
             Entrar
           </h2>
           {login.error && (
@@ -66,8 +68,8 @@ export function GameAuthScreen({ onSuccess }: Props) {
 
       {/* Create Account — light side */}
       <div className="flex-1 flex items-center justify-center bg-[#f5f5f5] text-[#0a0a0a]">
-        <form onSubmit={handleCreate} className="w-[min(240px,80%)] flex flex-col gap-3">
-          <h2 className="text-[clamp(22px,3vw,32px)] font-black tracking-[-0.03em] uppercase mb-1">
+        <form onSubmit={handleCreate} className="w-[min(320px,80%)] md:w-[min(240px,80%)] flex flex-col gap-3">
+          <h2 className="text-[clamp(22px,5vw,32px)] md:text-[clamp(22px,3vw,32px)] font-black tracking-[-0.03em] uppercase mb-1">
             Criar conta
           </h2>
           {createAccount.error && (

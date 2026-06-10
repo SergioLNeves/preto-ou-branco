@@ -89,6 +89,12 @@ func StartServer(dbPath string, port int) error {
 	auth.GET("/me", authHandler.Me)
 	auth.POST("/logout", authHandler.Logout)
 
+	gameHandler := handler.NewGameHandler(gameSvc)
+	game := v1.Group("/game")
+	game.GET("/questions/random", gameHandler.RandomQuestions)
+	game.POST("/vote", gameHandler.SubmitVote)
+	game.GET("/today", gameHandler.TodayResults)
+
 	rooms := v1.Group("/rooms")
 	rooms.POST("", roomHandler.CreateRoom, bearerAuth)
 	rooms.POST("/join", roomHandler.JoinRoom, optionalIdentity)
