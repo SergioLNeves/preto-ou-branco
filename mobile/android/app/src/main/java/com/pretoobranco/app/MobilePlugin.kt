@@ -1,7 +1,6 @@
 package com.pretoobranco.app
 
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
@@ -53,15 +52,17 @@ class MobilePlugin : Plugin() {
     }
 
     /**
-     * Starts the Cloudflare tunnel. Extracts the cloudflared binary from APK
-     * assets to filesDir (if not already there), then calls Go's StartTunnel.
+     * Starts the Cloudflare tunnel. cloudflared ships as a native library
+     * (jniLibs/<abi>/libcloudflared.so) so the OS extracts it to
+     * nativeLibraryDir, which is the only writable-at-install,
+     * executable-at-runtime location allowed by Android's W^X policy.
      * The call blocks until the tunnel URL is ready or errors (~10–30s).
      * Run this on a background thread — Capacitor does this automatically.
      */
     @PluginMethod
     fun startTunnel(call: PluginCall) {
         try {
-            val binPath = extractCloudflaredBinary()
+            val binPath = cloudflaredBinaryPath()
             val url = mobile.Mobile.startTunnel(binPath)
             val result = JSObject()
             result.put("url", url)
@@ -94,33 +95,17 @@ class MobilePlugin : Plugin() {
     }
 
     /**
-     * Copies the cloudflared binary matching this device's ABI from assets to
-     * filesDir and marks it executable. Returns the full path. Skips the copy
-     * if already present.
-     *
-     * The binaries must be placed at:
-     *   mobile/android/app/src/main/assets/cloudflared-android-{arm64,arm,amd64}
-     * Download from: https://github.com/cloudflare/cloudflared/releases
+     * Returns the path to libcloudflared.so inside nativeLibraryDir, where the
+     * package manager already extracted it (read-only, executable) at install
+     * time. Built from mobile/android/app/src/main/jniLibs/<abi>/libcloudflared.so.
      */
-    private fun extractCloudflaredBinary(): String {
-        val asset = when {
-            Build.SUPPORTED_ABIS.contains("arm64-v8a") -> "cloudflared-android-arm64"
-            Build.SUPPORTED_ABIS.contains("armeabi-v7a") -> "cloudflared-android-arm"
-            Build.SUPPORTED_ABIS.contains("x86_64") -> "cloudflared-android-amd64"
-            else -> throw UnsupportedOperationException(
+    private fun cloudflaredBinaryPath(): String {
+        val path = context.applicationInfo.nativeLibraryDir + "/libcloudflared.so"
+        if (!java.io.File(path).exists()) {
+            throw UnsupportedOperationException(
                 "Tunnel indisponível neste dispositivo. Compartilhe o link pelo IP local."
             )
         }
-
-        val dest = context.filesDir.absolutePath + "/cloudflared"
-        val destFile = java.io.File(dest)
-        if (destFile.exists()) return dest
-
-        context.assets.open(asset).use { input ->
-            destFile.outputStream().use { output -> input.copyTo(output) }
-        }
-        destFile.setExecutable(true, false)
-        Log.i(TAG, "cloudflared ($asset) extraído para $dest")
-        return dest
+        return path
     }
 }

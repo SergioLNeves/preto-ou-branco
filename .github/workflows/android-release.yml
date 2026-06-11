@@ -79,17 +79,16 @@ jobs:
 
       - name: Download cloudflared for Android
         run: |
-          mkdir -p mobile/android/app/src/main/assets
           base="https://github.com/cloudflare/cloudflared/releases/latest/download"
-          curl -L --fail --show-error --silent \
-            -o mobile/android/app/src/main/assets/cloudflared-android-arm64 \
-            "$base/cloudflared-linux-arm64"
-          curl -L --fail --show-error --silent \
-            -o mobile/android/app/src/main/assets/cloudflared-android-arm \
-            "$base/cloudflared-linux-arm"
-          curl -L --fail --show-error --silent \
-            -o mobile/android/app/src/main/assets/cloudflared-android-amd64 \
-            "$base/cloudflared-linux-amd64"
+          for pair in "arm64-v8a:cloudflared-linux-arm64" "armeabi-v7a:cloudflared-linux-arm" "x86_64:cloudflared-linux-amd64"; do
+            abi="${pair%%:*}"
+            asset="${pair##*:}"
+            dir="mobile/android/app/src/main/jniLibs/$abi"
+            mkdir -p "$dir"
+            curl -L --fail --show-error --silent \
+              -o "$dir/libcloudflared.so" \
+              "$base/$asset"
+          done
 
       - name: Build AAR
         run: make aar
