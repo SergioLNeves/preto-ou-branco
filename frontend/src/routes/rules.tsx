@@ -9,7 +9,7 @@ export const Route = createFileRoute("/rules")({
 function RulesRoute() {
   return (
     <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#0a0a0a]">
-      <InnerBackButton to="/" label="Início" />
+      <InnerBackButton to="/dashboard" label="Início" />
       <TutorialOverlay />
     </div>
   );

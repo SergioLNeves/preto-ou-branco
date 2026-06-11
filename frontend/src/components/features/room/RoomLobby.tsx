@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import QRCode from "react-qr-code";
@@ -15,6 +15,7 @@ interface Props {
 
 export function RoomLobby({ state }: Props) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: user } = useQuery(meQueryOptions);
   const startRoom = useStartRoom(state.room_id);
   const updateSettings = useUpdateRoomSettings(state.room_id);
@@ -33,6 +34,8 @@ export function RoomLobby({ state }: Props) {
   const count = state.participants.length;
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [tunnelLoading, setTunnelLoading] = useState(false);
+  const [tunnelError, setTunnelError] = useState<string | null>(null);
 
   const { data: serverStatus } = useQuery<ServerStatus>({
     queryKey: ["server-status"],
@@ -40,10 +43,29 @@ export function RoomLobby({ state }: Props) {
     enabled: hostBridge.isHost(),
   });
 
-  const shareLink =
-    hostBridge.isHost() && serverStatus?.active && serverStatus.public_url
-      ? `${serverStatus.public_url}/#/sala/${state.room_id}`
-      : null;
+  const shareBase =
+    serverStatus?.active && serverStatus.public_url
+      ? serverStatus.public_url
+      : serverStatus?.local_ip
+        ? `http://${serverStatus.local_ip}:8080`
+        : null;
+
+  const shareLink = shareBase ? `${shareBase}/#/sala/${state.room_id}` : null;
+
+  const isOnline = !!(serverStatus?.active && serverStatus.public_url);
+
+  async function handleGoOnline() {
+    setTunnelLoading(true);
+    setTunnelError(null);
+    try {
+      await hostBridge.startTunnel();
+      await queryClient.invalidateQueries({ queryKey: ["server-status"] });
+    } catch (err) {
+      setTunnelError(err instanceof Error ? err.message : "Falha ao conectar com o Cloudflare");
+    } finally {
+      setTunnelLoading(false);
+    }
+  }
 
   const avatarSize: "sm" | "md" | "lg" =
     count <= 4 ? "lg" : count <= 9 ? "md" : "sm";
@@ -106,6 +128,29 @@ export function RoomLobby({ state }: Props) {
           <span className="text-xs tracking-[0.3em] uppercase text-[rgba(245,245,245,0.4)]">
             Compartilhe o link da sala com os jogadores
           </span>
+        )}
+
+        {isHost && hostBridge.isHost() && (
+          <div className="flex flex-col items-center gap-2 mt-2">
+            <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.5)]">
+              {isOnline ? "🌐 Online (Cloudflare)" : "📡 Local (Wi-Fi)"}
+            </span>
+            {!isOnline && (
+              <button
+                type="button"
+                onClick={() => void handleGoOnline()}
+                disabled={tunnelLoading}
+                className="px-4 py-2 text-xs font-extrabold tracking-[0.2em] uppercase border border-[rgba(245,245,245,0.3)] hover:border-[rgba(245,245,245,0.6)] disabled:opacity-40 transition-colors cursor-pointer"
+              >
+                {tunnelLoading ? "Conectando..." : "Ficar online (Cloudflare)"}
+              </button>
+            )}
+            {tunnelError && (
+              <span className="text-xs tracking-[0.1em] text-[rgba(245,245,245,0.5)] text-center max-w-[260px] normal-case">
+                {tunnelError}
+              </span>
+            )}
+          </div>
         )}
       </div>
 

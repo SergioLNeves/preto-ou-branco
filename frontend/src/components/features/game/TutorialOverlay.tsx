@@ -13,7 +13,7 @@ interface Step {
 const STEPS_DESKTOP: Step[] = [
   {
     highlight: "card",
-    text: "A pergunta aparece sempre no centro. As perguntas e categorias são aleatórias a cada partida.",
+    text: "Em uma sala multiplayer, todos os jogadores recebem a mesma pergunta ao mesmo tempo, no centro da tela.",
   },
   {
     highlight: "branco",
@@ -25,14 +25,14 @@ const STEPS_DESKTOP: Step[] = [
   },
   {
     highlight: "reset",
-    text: "Mudou de ideia? Use o botão vermelho para resetar. Para confirmar, clique de novo no mesmo lado.",
+    text: "Mudou de ideia? Use o botão vermelho para resetar. Para confirmar, clique de novo no mesmo lado. Quando todos votarem, a sala avança para a próxima pergunta.",
   },
 ];
 
 const STEPS_TOUCH: Step[] = [
   {
     highlight: "card",
-    text: "A pergunta aparece sempre no centro. Cada partida sorteia perguntas e categorias aleatórias.",
+    text: "Em uma sala multiplayer, todos os jogadores recebem a mesma pergunta ao mesmo tempo, no centro da tela.",
   },
   {
     highlight: "branco",
@@ -44,7 +44,7 @@ const STEPS_TOUCH: Step[] = [
   },
   {
     highlight: "reset",
-    text: "Solte antes do limite para cancelar a escolha.",
+    text: "Solte antes do limite para cancelar a escolha. Quando todos votarem, a sala avança para a próxima pergunta.",
   },
 ];
 
@@ -66,13 +66,13 @@ function TutorialDesktop({ steps }: { steps: Step[] }) {
   const simulatedActive = h === "reset" || h === "branco" ? "branco" : h === "preto" ? "preto" : null;
 
   function advance() {
-    if (step >= steps.length - 1) void navigate({ to: "/play" });
+    if (step >= steps.length - 1) void navigate({ to: "/dashboard" });
     else setStep((s) => s + 1);
   }
 
   function skipToPlay(e: React.MouseEvent) {
     e.stopPropagation();
-    void navigate({ to: "/play" });
+    void navigate({ to: "/dashboard" });
   }
 
   return (
@@ -196,13 +196,13 @@ function TutorialTouch({ steps }: { steps: Step[] }) {
   const h = current.highlight;
 
   function advance() {
-    if (step >= steps.length - 1) void navigate({ to: "/play" });
+    if (step >= steps.length - 1) void navigate({ to: "/dashboard" });
     else setStep((s) => s + 1);
   }
 
   function skipToPlay(e: React.MouseEvent) {
     e.stopPropagation();
-    void navigate({ to: "/play" });
+    void navigate({ to: "/dashboard" });
   }
 
   const swingAnim =
