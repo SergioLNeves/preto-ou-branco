@@ -20,7 +20,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GO_VERSION: "1.25.7"
+      GO_VERSION: "1.26.2"
+      CLOUDFLARED_VERSION: "2026.6.0"
       NODE_VERSION: "22"
       PNPM_VERSION: "9"
       ANDROID_PLATFORM: "36"
@@ -77,18 +78,23 @@ jobs:
       - name: Initialize gomobile
         run: gomobile init
 
-      - name: Download cloudflared for Android
+      - name: Build cloudflared for Android (native, cgo DNS)
         run: |
-          base="https://github.com/cloudflare/cloudflared/releases/latest/download"
-          for pair in "arm64-v8a:cloudflared-linux-arm64" "armeabi-v7a:cloudflared-linux-arm" "x86_64:cloudflared-linux-amd64"; do
-            abi="${pair%%:*}"
-            asset="${pair##*:}"
-            dir="mobile/android/app/src/main/jniLibs/$abi"
-            mkdir -p "$dir"
-            curl -L --fail --show-error --silent \
-              -o "$dir/libcloudflared.so" \
-              "$base/$asset"
-          done
+          git clone --depth 1 --branch "${CLOUDFLARED_VERSION}" \
+            https://github.com/cloudflare/cloudflared.git "$RUNNER_TEMP/cloudflared"
+          BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          build() { # abi goarch cc [goarm]
+            local abi="$1" goarch="$2" cc="$3" goarm="${4:-}"
+            local out="$GITHUB_WORKSPACE/mobile/android/app/src/main/jniLibs/$abi"
+            mkdir -p "$out"
+            ( cd "$RUNNER_TEMP/cloudflared" && \
+              GOOS=android GOARCH="$goarch" GOARM="$goarm" CGO_ENABLED=1 \
+              CC="$BIN/$cc" \
+              go build -trimpath -o "$out/libcloudflared.so" ./cmd/cloudflared )
+          }
+          build arm64-v8a   arm64 aarch64-linux-android24-clang
+          build armeabi-v7a arm   armv7a-linux-androideabi24-clang 7
+          build x86_64      amd64 x86_64-linux-android24-clang
 
       - name: Build AAR
         run: make aar

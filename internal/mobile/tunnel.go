@@ -60,6 +60,11 @@ func (t *tunnelManager) start(cloudflaredPath string) (string, error) {
 		"--no-autoupdate",
 		"--output", "json",
 	)
+	// Em builds Android (cgo, GOOS=android) o resolver cgo já é o default e
+	// fala com o netd via Bionic. No desktop (binário oficial CGO_ENABLED=0)
+	// esse env é ignorado e o resolver puro-Go (que funciona normalmente em
+	// Linux/macOS/Windows) continua sendo usado.
+	cmd.Env = append(os.Environ(), "GODEBUG=netdns=cgo")
 	cmd.Stdout = pw
 	cmd.Stderr = pw
 
