@@ -96,12 +96,6 @@ jobs:
           build armeabi-v7a arm   armv7a-linux-androideabi24-clang 7
           build x86_64      amd64 x86_64-linux-android24-clang
 
-      - name: Build AAR
-        run: make aar
-
-      - name: Copy AAR into Android project
-        run: cp build/preto.aar mobile/android/app/libs/preto.aar
-
       - name: Install frontend dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
@@ -109,6 +103,12 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: pnpm build
+
+      - name: Build AAR
+        run: make aar
+
+      - name: Copy AAR into Android project
+        run: cp build/preto.aar mobile/android/app/libs/preto.aar
 
       - name: Install mobile dependencies
         working-directory: mobile

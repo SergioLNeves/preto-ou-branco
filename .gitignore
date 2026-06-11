@@ -25,3 +25,7 @@ mobile/android/app/build/
 mobile/android/build/
 mobile/android/app/libs/preto.aar
 mobile/android/app/src/main/jniLibs/*/libcloudflared.so
+
+# Frontend build copiado para internal/mobile/dist por `make aar` (embed)
+internal/mobile/dist/*
+!internal/mobile/dist/.keep

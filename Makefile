@@ -24,6 +24,9 @@ AAR_OUT := build/preto.aar
 AAR_TARGETS ?= android/arm64,android/arm,android/amd64
 
 aar: aar-deps
+	@test -f frontend/dist/index.html || { echo "frontend/dist ausente — rode 'cd frontend && pnpm build' antes"; exit 1; }
+	@mkdir -p internal/mobile/dist
+	@cp -r frontend/dist/. internal/mobile/dist/
 	@mkdir -p build
 	CGO_ENABLED=1 gomobile bind \
 		-target=$(AAR_TARGETS) \

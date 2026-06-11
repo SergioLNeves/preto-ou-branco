@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -105,6 +106,24 @@ func StartServer(dbPath string, port int) error {
 	rooms.GET("/:id/results", roomHandler.GetRoomResults, roomIdentity)
 	rooms.POST("/:id/vote", roomHandler.SubmitRoomVote, roomIdentity)
 	rooms.GET("/:id/ws", roomHandler.WebSocketConnect, roomIdentity)
+
+	// Serve the embedded SPA for browser guests connecting via the LAN IP or
+	// the Cloudflare tunnel — same approach as the desktop's startHTTPServer
+	// (app.go). Without this, GET "/" falls through to Echo's 404 and the
+	// shared link never loads the app.
+	staticFS, err := fs.Sub(spaFiles, "dist")
+	if err != nil {
+		lastError = fmt.Sprintf("frontend assets: %v", err)
+		return fmt.Errorf("frontend assets: %w", err)
+	}
+	fileServer := http.FileServer(http.FS(staticFS))
+	e.GET("/assets/*", echo.WrapHandler(fileServer))
+	e.GET("/", func(c echo.Context) error {
+		return serveIndex(c, staticFS)
+	})
+	e.GET("/*", func(c echo.Context) error {
+		return serveIndex(c, staticFS)
+	})
 
 	// Bind the listener synchronously so srv is only published once the port
 	// is actually accepting connections — GetServerStatus()'s "running" flag
@@ -217,4 +236,15 @@ func GetServerStatus() string {
 		LastError: errMsg,
 	})
 	return string(b)
+}
+
+// serveIndex returns index.html from the embedded SPA — used both for "/"
+// and as the fallback for client-side routes (e.g. "/sala/<id>") so the
+// TanStack Router app can take over and resolve the hash route itself.
+func serveIndex(c echo.Context, staticFS fs.FS) error {
+	data, err := fs.ReadFile(staticFS, "index.html")
+	if err != nil {
+		return c.String(http.StatusNotFound, "not found")
+	}
+	return c.HTMLBlob(http.StatusOK, data)
 }
