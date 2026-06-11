@@ -96,11 +96,11 @@ func (s *GameService) ListRandomQuestions(ctx context.Context, limit int) ([]dom
 
 func (s *GameService) SubmitVote(ctx context.Context, questionID string, choice string) (*domain.VoteResultResponse, error) {
 	if choice != "preto" && choice != "branco" {
-		return nil, fmt.Errorf("choice must be 'preto' or 'branco'")
+		return nil, domain.ErrInvalidChoice
 	}
 	qID, err := uuid.Parse(questionID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid question id: %w", err)
+		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidQuestionID, err)
 	}
 	tx, err := s.repo.SubmitVoteTx(ctx, qID, choice)
 	if err != nil {

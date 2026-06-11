@@ -11,11 +11,15 @@ export const Route = createRootRoute({
 });
 
 function Root() {
-  const serverReady = useServerReady();
+  const serverState = useServerReady();
 
   return (
     <QueryProvider>
-      {serverReady ? <Outlet /> : <YinYangLoader message="Iniciando servidor..." />}
+      {serverState === "ready" && <Outlet />}
+      {serverState === "pending" && <YinYangLoader message="Iniciando servidor..." />}
+      {serverState === "timeout" && (
+        <YinYangLoader message="Não foi possível iniciar o servidor. Reabra o app." />
+      )}
       <Toaster position="bottom-center" />
     </QueryProvider>
   );

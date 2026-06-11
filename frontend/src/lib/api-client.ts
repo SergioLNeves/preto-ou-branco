@@ -9,12 +9,16 @@ function authHeaders(): Record<string, string> {
   return headers;
 }
 
+/** Echo's default error handler returns {"message": ...}; handlers that build
+ *  their own JSON (e.g. room.go) return {"error": ...} — accept either shape. */
+async function apiError(res: Response): Promise<Error> {
+  const body = await res.json().catch(() => ({})) as { error?: string; message?: string };
+  return new Error(body.error ?? body.message ?? `HTTP ${res.status}`);
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${getServerBaseURL()}${path}`, { headers: authHeaders() });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `HTTP ${res.status}`);
-  }
+  if (!res.ok) throw await apiError(res);
   return res.json();
 }
 
@@ -25,9 +29,6 @@ export async function apiPost<T>(path: string, body?: unknown, method = "POST"):
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (res.status === 204) return undefined as T;
-  if (!res.ok) {
-    const b = await res.json().catch(() => ({}));
-    throw new Error(b.error ?? `HTTP ${res.status}`);
-  }
+  if (!res.ok) throw await apiError(res);
   return res.json();
 }

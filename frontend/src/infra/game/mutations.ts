@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { isWails, getServerBaseURL } from "@/lib/server-url";
+import { withWails } from "@/lib/server-url";
+import { apiPost } from "@/lib/api-client";
 import type { Choice, VoteResult } from "@/types/game";
 
 interface SubmitVoteInput {
@@ -17,19 +18,17 @@ interface VoteResultResponse {
 export function useSubmitVote() {
   return useMutation({
     mutationFn: async (input: SubmitVoteInput): Promise<VoteResult> => {
-      let data: VoteResultResponse;
-      if (isWails()) {
-        const { SubmitVote } = await import("../../../wailsjs/go/bindings/GameApp");
-        data = (await SubmitVote(input.questionId, input.choice)) as VoteResultResponse;
-      } else {
-        const res = await fetch(`${getServerBaseURL()}/v1/game/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question_id: input.questionId, choice: input.choice }),
-        });
-        if (!res.ok) throw new Error("erro ao registrar voto");
-        data = (await res.json()) as VoteResultResponse;
-      }
+      const data = await withWails(
+        async () => {
+          const { SubmitVote } = await import("../../../wailsjs/go/bindings/GameApp");
+          return (await SubmitVote(input.questionId, input.choice)) as VoteResultResponse;
+        },
+        () =>
+          apiPost<VoteResultResponse>("/v1/game/vote", {
+            question_id: input.questionId,
+            choice: input.choice,
+          }),
+      );
       return {
         questionId: data.question_id,
         pctPreto: data.pct_preto,

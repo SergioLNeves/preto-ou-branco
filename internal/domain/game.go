@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	ErrCategoryNotFound = fmt.Errorf("category not found")
-	ErrQuestionNotFound = fmt.Errorf("question not found")
+	ErrCategoryNotFound  = fmt.Errorf("category not found")
+	ErrQuestionNotFound  = fmt.Errorf("question not found")
+	ErrInvalidChoice     = fmt.Errorf("choice must be 'preto' or 'branco'")
+	ErrInvalidQuestionID = fmt.Errorf("invalid question id")
 )
 
 type Category struct {

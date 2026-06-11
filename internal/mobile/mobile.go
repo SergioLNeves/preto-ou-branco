@@ -12,8 +12,11 @@ package mobile
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -108,11 +111,19 @@ func StartServer(dbPath string, port int) error {
 	rooms.POST("/:id/vote", roomHandler.SubmitRoomVote, roomIdentity)
 	rooms.GET("/:id/ws", roomHandler.WebSocketConnect, roomIdentity)
 
+	// Bind the listener synchronously so srv is only published once the port
+	// is actually accepting connections — GetServerStatus()'s "running" flag
+	// is used by the mobile app to gate its first HTTP requests.
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	e.Listener = ln
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		addr := fmt.Sprintf(":%d", port)
-		if err := e.Start(addr); err != nil {
+		if err := e.Start(""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("HTTP server stopped: %v", err)
 		}
 	}()

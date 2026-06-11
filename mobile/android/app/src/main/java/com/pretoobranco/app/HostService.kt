@@ -48,6 +48,9 @@ class HostService : Service() {
                 Log.i(TAG, "Go server iniciado em :$port, db=$dbPath")
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao iniciar servidor Go: ${e.message}")
+                // Drop the "Hospedando sala" notification — the server never came up,
+                // so the persistent foreground notification would be misleading.
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
         }.start()

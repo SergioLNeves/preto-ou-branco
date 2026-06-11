@@ -8,6 +8,11 @@ export function isWails(): boolean {
   return typeof window !== "undefined" && "go" in window;
 }
 
+/** Runs `wailsFn` on the Wails desktop app, `httpFn` everywhere else (Capacitor/browser). */
+export function withWails<T>(wailsFn: () => Promise<T>, httpFn: () => Promise<T>): Promise<T> {
+  return isWails() ? wailsFn() : httpFn();
+}
+
 export function getServerBaseURL(): string {
   // Wails host or Capacitor native → always local backend
   if (isWails() || Capacitor.isNativePlatform()) return DEFAULT;

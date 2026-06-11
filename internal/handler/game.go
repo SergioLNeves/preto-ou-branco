@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -24,7 +25,7 @@ func (h *GameHandler) RandomQuestions(c echo.Context) error {
 	}
 	qs, err := h.svc.ListRandomQuestions(c.Request().Context(), limit)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return domainGameError(err)
 	}
 	return c.JSON(http.StatusOK, qs)
 }
@@ -44,7 +45,7 @@ func (h *GameHandler) SubmitVote(c echo.Context) error {
 	}
 	res, err := h.svc.SubmitVote(c.Request().Context(), req.QuestionID, req.Choice)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return domainGameError(err)
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -52,7 +53,18 @@ func (h *GameHandler) SubmitVote(c echo.Context) error {
 func (h *GameHandler) TodayResults(c echo.Context) error {
 	list, err := h.svc.GetDayVotes(c.Request().Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return domainGameError(err)
 	}
 	return c.JSON(http.StatusOK, list)
+}
+
+func domainGameError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrInvalidChoice), errors.Is(err, domain.ErrInvalidQuestionID):
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	case errors.Is(err, domain.ErrCategoryNotFound), errors.Is(err, domain.ErrQuestionNotFound):
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	default:
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 }
