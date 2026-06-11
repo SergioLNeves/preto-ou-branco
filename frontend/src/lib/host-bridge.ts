@@ -19,6 +19,8 @@ export type ServerStatus = {
   active: boolean;
   public_url: string;
   local_ip: string;
+  /** mensagem do último erro de StartServer (mobile), "" se ok */
+  last_error?: string;
 };
 
 type HostBridge = {

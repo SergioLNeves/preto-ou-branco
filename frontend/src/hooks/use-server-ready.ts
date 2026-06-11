@@ -7,15 +7,22 @@ const TIMEOUT_MS = 30_000;
 
 export type ServerReadyState = "ready" | "pending" | "timeout";
 
+export type ServerReadyResult = {
+  state: ServerReadyState;
+  errorMessage: string | null;
+};
+
 /**
  * Indica o estado do servidor Go.
  * No Capacitor, faz polling de getServerStatus() até running === true,
  * ou marca "timeout" se o servidor não subir dentro de TIMEOUT_MS.
+ * Se o servidor reportar last_error, falha imediatamente com a mensagem real.
  * No Wails e no browser, retorna "ready" imediatamente (server já está up ou não existe).
  */
-export function useServerReady(): ServerReadyState {
+export function useServerReady(): ServerReadyResult {
   const isCapacitor = Capacitor.isNativePlatform();
   const [state, setState] = useState<ServerReadyState>(isCapacitor ? "pending" : "ready");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isCapacitor) return;
@@ -29,6 +36,13 @@ export function useServerReady(): ServerReadyState {
           const status = await hostBridge.getServerStatus();
           if (status.running) {
             if (!cancelled) setState("ready");
+            return;
+          }
+          if (status.last_error) {
+            if (!cancelled) {
+              setErrorMessage(status.last_error);
+              setState("timeout");
+            }
             return;
           }
         } catch {
@@ -48,5 +62,5 @@ export function useServerReady(): ServerReadyState {
     };
   }, [isCapacitor]);
 
-  return state;
+  return { state, errorMessage };
 }

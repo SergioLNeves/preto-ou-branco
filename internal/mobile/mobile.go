@@ -32,8 +32,9 @@ import (
 )
 
 var (
-	mu  sync.Mutex
-	srv *mobileServer
+	mu        sync.Mutex
+	srv       *mobileServer
+	lastError string
 )
 
 type mobileServer struct {
@@ -57,6 +58,7 @@ func StartServer(dbPath string, port int) error {
 
 	db, err := sqlite.OpenAt(dbPath)
 	if err != nil {
+		lastError = fmt.Sprintf("database: %v", err)
 		return fmt.Errorf("database: %w", err)
 	}
 
@@ -116,6 +118,7 @@ func StartServer(dbPath string, port int) error {
 	// is used by the mobile app to gate its first HTTP requests.
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
+		lastError = fmt.Sprintf("listen: %v", err)
 		return fmt.Errorf("listen: %w", err)
 	}
 	e.Listener = ln
@@ -138,6 +141,7 @@ func StartServer(dbPath string, port int) error {
 		cancel:  cancel,
 		tunnel:  newTunnelManager(),
 	}
+	lastError = ""
 	return nil
 }
 
@@ -197,6 +201,7 @@ func StopTunnel() error {
 func GetServerStatus() string {
 	mu.Lock()
 	t := srv
+	errMsg := lastError
 	mu.Unlock()
 
 	type status struct {
@@ -204,10 +209,11 @@ func GetServerStatus() string {
 		Active    bool   `json:"active"`
 		PublicURL string `json:"public_url"`
 		LocalIP   string `json:"local_ip"`
+		LastError string `json:"last_error"`
 	}
 
 	if t == nil {
-		b, _ := json.Marshal(status{})
+		b, _ := json.Marshal(status{LastError: errMsg})
 		return string(b)
 	}
 
@@ -217,6 +223,7 @@ func GetServerStatus() string {
 		Active:    ts.active,
 		PublicURL: ts.publicURL,
 		LocalIP:   serverLocalIP(),
+		LastError: errMsg,
 	})
 	return string(b)
 }

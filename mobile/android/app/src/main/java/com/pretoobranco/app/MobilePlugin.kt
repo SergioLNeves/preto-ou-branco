@@ -1,6 +1,7 @@
 package com.pretoobranco.app
 
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
@@ -93,23 +94,33 @@ class MobilePlugin : Plugin() {
     }
 
     /**
-     * Copies cloudflared-android-arm64 from assets to filesDir and marks it
-     * executable. Returns the full path. Skips the copy if already present.
+     * Copies the cloudflared binary matching this device's ABI from assets to
+     * filesDir and marks it executable. Returns the full path. Skips the copy
+     * if already present.
      *
-     * The binary must be placed at:
-     *   mobile/android/app/src/main/assets/cloudflared-android-arm64
+     * The binaries must be placed at:
+     *   mobile/android/app/src/main/assets/cloudflared-android-{arm64,arm,amd64}
      * Download from: https://github.com/cloudflare/cloudflared/releases
      */
     private fun extractCloudflaredBinary(): String {
+        val asset = when {
+            Build.SUPPORTED_ABIS.contains("arm64-v8a") -> "cloudflared-android-arm64"
+            Build.SUPPORTED_ABIS.contains("armeabi-v7a") -> "cloudflared-android-arm"
+            Build.SUPPORTED_ABIS.contains("x86_64") -> "cloudflared-android-amd64"
+            else -> throw UnsupportedOperationException(
+                "Tunnel indisponível neste dispositivo. Compartilhe o link pelo IP local."
+            )
+        }
+
         val dest = context.filesDir.absolutePath + "/cloudflared"
         val destFile = java.io.File(dest)
         if (destFile.exists()) return dest
 
-        context.assets.open("cloudflared-android-arm64").use { input ->
+        context.assets.open(asset).use { input ->
             destFile.outputStream().use { output -> input.copyTo(output) }
         }
         destFile.setExecutable(true, false)
-        Log.i(TAG, "cloudflared extraído para $dest")
+        Log.i(TAG, "cloudflared ($asset) extraído para $dest")
         return dest
     }
 }

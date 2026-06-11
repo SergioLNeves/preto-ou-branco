@@ -47,7 +47,7 @@ class HostService : Service() {
                 mobile.Mobile.startServer(dbPath, port.toLong())
                 Log.i(TAG, "Go server iniciado em :$port, db=$dbPath")
             } catch (e: Exception) {
-                Log.e(TAG, "Erro ao iniciar servidor Go: ${e.message}")
+                Log.e(TAG, "Erro ao iniciar servidor Go", e)
                 // Drop the "Hospedando sala" notification — the server never came up,
                 // so the persistent foreground notification would be misleading.
                 stopForeground(STOP_FOREGROUND_REMOVE)

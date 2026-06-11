@@ -25,7 +25,7 @@ jobs:
       PNPM_VERSION: "9"
       ANDROID_PLATFORM: "36"
       ANDROID_BUILD_TOOLS: "36.0.0"
-      ANDROID_NDK_VERSION: "27.1.12297006"
+      ANDROID_NDK_VERSION: "28.2.13676358"
       APK_NAME: preto-android-debug.apk
 
     steps:
@@ -80,9 +80,16 @@ jobs:
       - name: Download cloudflared for Android
         run: |
           mkdir -p mobile/android/app/src/main/assets
+          base="https://github.com/cloudflare/cloudflared/releases/latest/download"
           curl -L --fail --show-error --silent \
             -o mobile/android/app/src/main/assets/cloudflared-android-arm64 \
-            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64
+            "$base/cloudflared-linux-arm64"
+          curl -L --fail --show-error --silent \
+            -o mobile/android/app/src/main/assets/cloudflared-android-arm \
+            "$base/cloudflared-linux-arm"
+          curl -L --fail --show-error --silent \
+            -o mobile/android/app/src/main/assets/cloudflared-android-amd64 \
+            "$base/cloudflared-linux-amd64"
 
       - name: Build AAR
         run: make aar

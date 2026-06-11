@@ -25,3 +25,5 @@ mobile/android/app/build/
 mobile/android/build/
 mobile/android/app/libs/preto.aar
 mobile/android/app/src/main/assets/cloudflared-android-arm64
+mobile/android/app/src/main/assets/cloudflared-android-arm
+mobile/android/app/src/main/assets/cloudflared-android-amd64

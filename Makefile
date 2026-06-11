@@ -18,11 +18,17 @@ build:
 
 AAR_OUT := build/preto.aar
 
+# Targets do gomobile bind. Inclui android/amd64 para rodar em emuladores
+# x86_64 do Android Studio. Para uma release enxuta (só dispositivos físicos),
+# rode: AAR_TARGETS=android/arm64,android/arm make aar
+AAR_TARGETS ?= android/arm64,android/arm,android/amd64
+
 aar: aar-deps
 	@mkdir -p build
 	CGO_ENABLED=1 gomobile bind \
-		-target=android/arm64,android/arm \
+		-target=$(AAR_TARGETS) \
 		-androidapi 24 \
+		-ldflags '-extldflags "-Wl,-z,max-page-size=16384"' \
 		-o $(AAR_OUT) \
 		./pkg/mobile
 	@echo "AAR gerado em $(AAR_OUT)"
