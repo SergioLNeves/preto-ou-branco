@@ -40,7 +40,6 @@ var (
 type mobileServer struct {
 	echo    *echo.Echo
 	roomSvc *service.RoomService
-	gameSvc *service.GameService
 	cancel  context.CancelFunc
 	tunnel  *tunnelManager
 }
@@ -94,12 +93,6 @@ func StartServer(dbPath string, port int) error {
 	auth.GET("/me", authHandler.Me)
 	auth.POST("/logout", authHandler.Logout)
 
-	gameHandler := handler.NewGameHandler(gameSvc)
-	game := v1.Group("/game")
-	game.GET("/questions/random", gameHandler.RandomQuestions)
-	game.POST("/vote", gameHandler.SubmitVote)
-	game.GET("/today", gameHandler.TodayResults)
-
 	rooms := v1.Group("/rooms")
 	rooms.POST("", roomHandler.CreateRoom, bearerAuth)
 	rooms.POST("/join", roomHandler.JoinRoom, optionalIdentity)
@@ -132,12 +125,10 @@ func StartServer(dbPath string, port int) error {
 	}()
 
 	go roomSvc.Tick(ctx)
-	go scheduleDailyAggregation(ctx, gameSvc)
 
 	srv = &mobileServer{
 		echo:    e,
 		roomSvc: roomSvc,
-		gameSvc: gameSvc,
 		cancel:  cancel,
 		tunnel:  newTunnelManager(),
 	}
@@ -226,25 +217,4 @@ func GetServerStatus() string {
 		LastError: errMsg,
 	})
 	return string(b)
-}
-
-func scheduleDailyAggregation(ctx context.Context, gameSvc *service.GameService) {
-	for {
-		now := time.Now().UTC()
-		next := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, time.UTC)
-		if !next.After(now) {
-			next = next.Add(24 * time.Hour)
-		}
-		timer := time.NewTimer(next.Sub(now))
-		select {
-		case <-timer.C:
-			yesterday := next.Add(-24 * time.Hour)
-			if err := gameSvc.AggregateDailyResults(ctx, yesterday); err != nil {
-				log.Printf("aggregate daily results: %v", err)
-			}
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		}
-	}
 }

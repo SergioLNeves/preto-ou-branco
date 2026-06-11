@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -25,7 +24,6 @@ import (
 
 type App struct {
 	ctx       context.Context
-	gameApp   *bindings.GameApp
 	authApp   *bindings.AuthApp
 	serverApp *bindings.ServerApp
 	gameSvc   *service.GameService
@@ -40,7 +38,6 @@ func NewApp(assets embed.FS) *App {
 
 	gameRepo := repository.NewGameRepo(db)
 	gameSvc := service.NewGameService(gameRepo)
-	gameApp := bindings.NewGameApp(gameSvc)
 
 	authRepo := repository.NewAuthRepo(db)
 	authSvc := service.NewAuthService(authRepo)
@@ -61,7 +58,6 @@ func NewApp(assets embed.FS) *App {
 	go startHTTPServer(subFS, authSvc, roomRepo, roomHandler)
 
 	return &App{
-		gameApp:   gameApp,
 		authApp:   authApp,
 		serverApp: serverApp,
 		gameSvc:   gameSvc,
@@ -128,29 +124,7 @@ func serveIndex(c echo.Context, staticFS fs.FS) error {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	bindings.InitContext(a.serverApp, ctx)
-	go a.scheduleDailyAggregation()
 	go a.roomSvc.Tick(ctx)
-}
-
-func (a *App) scheduleDailyAggregation() {
-	for {
-		now := time.Now().UTC()
-		next := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, time.UTC)
-		if !next.After(now) {
-			next = next.Add(24 * time.Hour)
-		}
-		timer := time.NewTimer(next.Sub(now))
-		select {
-		case <-timer.C:
-			yesterday := next.Add(-24 * time.Hour)
-			if err := a.gameSvc.AggregateDailyResults(a.ctx, yesterday); err != nil {
-				log.Printf("aggregate daily results: %v", err)
-			}
-		case <-a.ctx.Done():
-			timer.Stop()
-			return
-		}
-	}
 }
 
 // LocalIP returns the machine's LAN IPv4 address for sharing with guests.

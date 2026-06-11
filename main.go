@@ -24,7 +24,6 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 10, G: 10, B: 10, A: 1},
 		OnStartup:        app.startup,
 		Bind: []interface{}{
-			app.gameApp,
 			app.authApp,
 			app.serverApp,
 			app,

@@ -24,28 +24,6 @@ type QuestionTable struct {
 
 func (QuestionTable) TableName() string { return "question" }
 
-type VoteTable struct {
-	ID         string        `gorm:"type:varchar(36);primary_key"`
-	QuestionID string        `gorm:"type:varchar(36);not null;index"`
-	Question   QuestionTable `gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
-	Choice     string        `gorm:"type:varchar(10);not null"`
-	CreatedAt  time.Time
-}
-
-func (VoteTable) TableName() string { return "vote" }
-
-type QuestionResultsTable struct {
-	ID          string        `gorm:"type:varchar(36);primary_key"`
-	QuestionID  string        `gorm:"type:varchar(36);not null;uniqueIndex:idx_question_results_question_date"`
-	Question    QuestionTable `gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
-	Date        time.Time     `gorm:"type:date;not null;uniqueIndex:idx_question_results_question_date"`
-	VotesPreto  int           `gorm:"not null;default:0"`
-	VotesBranco int           `gorm:"not null;default:0"`
-	Total       int           `gorm:"not null;default:0"`
-}
-
-func (QuestionResultsTable) TableName() string { return "question_results" }
-
 // Auth tables
 
 type UserTable struct {
@@ -123,8 +101,6 @@ func GetModelsToMigrate() []any {
 	return []any{
 		&CategoryTable{},
 		&QuestionTable{},
-		&VoteTable{},
-		&QuestionResultsTable{},
 		&UserTable{},
 		&UserSessionTable{},
 		&RoomTable{},
