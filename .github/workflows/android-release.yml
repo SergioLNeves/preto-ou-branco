@@ -100,10 +100,8 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Build frontend
-        working-directory: frontend
-        run: pnpm build
-
+      # `make aar` builda o frontend (target frontend-build) antes do bind,
+      # garantindo que o embed nunca empacota um dist obsoleto.
       - name: Build AAR
         run: make aar
 

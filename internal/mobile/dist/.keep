@@ -1,2 +1,0 @@
-Placeholder so //go:embed all:dist compiles before `make aar` copies the
-real frontend/dist build here. See internal/mobile/assets.go.

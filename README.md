@@ -118,7 +118,8 @@ Se preferir rodar pela interface do GitHub, use **Actions → Android Release �
 O código Go em `pkg/mobile/` é compilado para um AAR via gomobile e copiado para os `libs` do projeto Android.
 
 ```bash
-# Compila o AAR (requer NDK configurado)
+# Builda o frontend (pnpm build) e compila o AAR (requer NDK configurado
+# e dependências do frontend instaladas: cd frontend && pnpm install)
 make aar
 # Saída: build/preto.aar
 
@@ -143,12 +144,12 @@ O que o AAR exporta (chamado pelo Kotlin via `mobile.Mobile.*`):
 | `StopTunnel()` | `Mobile.stopTunnel()` |
 | `GetServerStatus()` | `Mobile.getServerStatus(): String` (JSON) |
 
-### Etapa 3 — Build do frontend e sincronização Capacitor
+### Etapa 3 — Sincronização Capacitor
+
+O frontend já foi buildado pelo `make aar` (Etapa 2). Se alterou o frontend
+depois disso, rode `cd frontend && pnpm build` novamente antes de sincronizar.
 
 ```bash
-# Build do React/Vite
-cd frontend && pnpm build && cd ..
-
 # Copia o dist para os assets Android
 cd mobile && npx cap sync android
 ```

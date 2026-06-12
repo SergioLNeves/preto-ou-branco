@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"embed"
 	"io/fs"
 	"log"
 	"net"
-	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -19,6 +17,7 @@ import (
 	"preto-ou-branco/internal/realtime"
 	"preto-ou-branco/internal/repository"
 	"preto-ou-branco/internal/service"
+	"preto-ou-branco/internal/spa"
 	"preto-ou-branco/internal/storage/sqlite"
 )
 
@@ -30,7 +29,7 @@ type App struct {
 	roomSvc   *service.RoomService
 }
 
-func NewApp(assets embed.FS) *App {
+func NewApp(staticFS fs.FS) *App {
 	db, err := sqlite.Open()
 	if err != nil {
 		log.Fatalf("database init: %v", err)
@@ -50,12 +49,7 @@ func NewApp(assets embed.FS) *App {
 	roomSvc := service.NewRoomService(roomRepo, gameSvc, hub)
 	roomHandler := handler.NewRoomHandler(roomSvc, hub)
 
-	subFS, err := fs.Sub(assets, "frontend/dist")
-	if err != nil {
-		log.Fatalf("frontend assets: %v", err)
-	}
-
-	go startHTTPServer(subFS, authSvc, roomRepo, roomHandler)
+	go startHTTPServer(staticFS, authSvc, roomRepo, roomHandler)
 
 	return &App{
 		authApp:   authApp,
@@ -98,27 +92,12 @@ func startHTTPServer(
 	rooms.POST("/:id/vote", roomHandler.SubmitRoomVote, roomIdentity)
 	rooms.GET("/:id/ws", roomHandler.WebSocketConnect, roomIdentity)
 
-	// Serve frontend for browser guests — index.html for all non-API routes
-	fileServer := http.FileServer(http.FS(staticFS))
-	e.GET("/assets/*", echo.WrapHandler(fileServer))
-	e.GET("/", func(c echo.Context) error {
-		return serveIndex(c, staticFS)
-	})
-	e.GET("/*", func(c echo.Context) error {
-		return serveIndex(c, staticFS)
-	})
+	// Serve frontend for browser guests — shared with the Android server.
+	spa.Register(e, staticFS)
 
 	if err := e.Start(":8080"); err != nil {
 		log.Printf("HTTP server stopped: %v", err)
 	}
-}
-
-func serveIndex(c echo.Context, staticFS fs.FS) error {
-	data, err := fs.ReadFile(staticFS, "index.html")
-	if err != nil {
-		return c.String(http.StatusNotFound, "not found")
-	}
-	return c.HTMLBlob(http.StatusOK, data)
 }
 
 func (a *App) startup(ctx context.Context) {

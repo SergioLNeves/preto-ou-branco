@@ -1,4 +1,4 @@
-.PHONY: dev build aar aar-deps clean
+.PHONY: dev build aar aar-deps frontend-build clean
 
 # ── Desktop (Wails) ──────────────────────────────────────────────────────────
 dev:
@@ -23,10 +23,12 @@ AAR_OUT := build/preto.aar
 # rode: AAR_TARGETS=android/arm64,android/arm make aar
 AAR_TARGETS ?= android/arm64,android/arm,android/amd64
 
-aar: aar-deps
-	@test -f frontend/dist/index.html || { echo "frontend/dist ausente — rode 'cd frontend && pnpm build' antes"; exit 1; }
-	@mkdir -p internal/mobile/dist
-	@cp -r frontend/dist/. internal/mobile/dist/
+# Sempre reconstrói o frontend: o embed (frontend/embed.go) compila o que
+# estiver em frontend/dist, e um dist obsoleto seria embarcado sem erro.
+frontend-build:
+	cd frontend && pnpm build
+
+aar: aar-deps frontend-build
 	@mkdir -p build
 	CGO_ENABLED=1 gomobile bind \
 		-target=$(AAR_TARGETS) \
@@ -47,3 +49,4 @@ clean:
 	rm -f build/preto.aar
 	rm -f build/preto-sources.jar
 	rm -rf frontend/dist
+	rm -rf internal/mobile/dist

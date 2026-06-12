@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -23,12 +22,14 @@ import (
 
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
+	"gorm.io/gorm"
 
 	"preto-ou-branco/internal/handler"
 	"preto-ou-branco/internal/middleware"
 	"preto-ou-branco/internal/realtime"
 	"preto-ou-branco/internal/repository"
 	"preto-ou-branco/internal/service"
+	"preto-ou-branco/internal/spa"
 	"preto-ou-branco/internal/storage/sqlite"
 )
 
@@ -40,6 +41,7 @@ var (
 
 type mobileServer struct {
 	echo    *echo.Echo
+	db      *gorm.DB
 	roomSvc *service.RoomService
 	cancel  context.CancelFunc
 	tunnel  *tunnelManager
@@ -108,28 +110,25 @@ func StartServer(dbPath string, port int) error {
 	rooms.GET("/:id/ws", roomHandler.WebSocketConnect, roomIdentity)
 
 	// Serve the embedded SPA for browser guests connecting via the LAN IP or
-	// the Cloudflare tunnel — same approach as the desktop's startHTTPServer
-	// (app.go). Without this, GET "/" falls through to Echo's 404 and the
-	// shared link never loads the app.
-	staticFS, err := fs.Sub(spaFiles, "dist")
+	// the Cloudflare tunnel — shared with the desktop server via internal/spa.
+	// Without this, GET "/" falls through to Echo's 404 and the shared link
+	// never loads the app. spa.Assets also fails fast (surfaced through
+	// lastError → GetServerStatus) when the binary was built without the
+	// frontend, instead of serving "not found" to every guest.
+	staticFS, err := spa.Assets()
 	if err != nil {
-		lastError = fmt.Sprintf("frontend assets: %v", err)
-		return fmt.Errorf("frontend assets: %w", err)
+		closeDB(db)
+		lastError = err.Error()
+		return err
 	}
-	fileServer := http.FileServer(http.FS(staticFS))
-	e.GET("/assets/*", echo.WrapHandler(fileServer))
-	e.GET("/", func(c echo.Context) error {
-		return serveIndex(c, staticFS)
-	})
-	e.GET("/*", func(c echo.Context) error {
-		return serveIndex(c, staticFS)
-	})
+	spa.Register(e, staticFS)
 
 	// Bind the listener synchronously so srv is only published once the port
 	// is actually accepting connections — GetServerStatus()'s "running" flag
 	// is used by the mobile app to gate its first HTTP requests.
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
+		closeDB(db)
 		lastError = fmt.Sprintf("listen: %v", err)
 		return fmt.Errorf("listen: %w", err)
 	}
@@ -147,6 +146,7 @@ func StartServer(dbPath string, port int) error {
 
 	srv = &mobileServer{
 		echo:    e,
+		db:      db,
 		roomSvc: roomSvc,
 		cancel:  cancel,
 		tunnel:  newTunnelManager(),
@@ -171,8 +171,18 @@ func StopServer() error {
 		log.Printf("echo shutdown: %v", err)
 	}
 	srv.tunnel.stop()
+	closeDB(srv.db)
 	srv = nil
 	return nil
+}
+
+// closeDB releases the SQLite handle — StartServer error paths and
+// StopServer must not leak connections: the Android service retries
+// StartServer in the same long-lived process.
+func closeDB(db *gorm.DB) {
+	if sqlDB, err := db.DB(); err == nil {
+		_ = sqlDB.Close()
+	}
 }
 
 // StartTunnel starts a Cloudflare Quick Tunnel and returns the public HTTPS URL.
@@ -236,15 +246,4 @@ func GetServerStatus() string {
 		LastError: errMsg,
 	})
 	return string(b)
-}
-
-// serveIndex returns index.html from the embedded SPA — used both for "/"
-// and as the fallback for client-side routes (e.g. "/sala/<id>") so the
-// TanStack Router app can take over and resolve the hash route itself.
-func serveIndex(c echo.Context, staticFS fs.FS) error {
-	data, err := fs.ReadFile(staticFS, "index.html")
-	if err != nil {
-		return c.String(http.StatusNotFound, "not found")
-	}
-	return c.HTMLBlob(http.StatusOK, data)
 }
