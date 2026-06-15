@@ -23,14 +23,12 @@ func NewRoomRepo(db *gorm.DB) *RoomRepo {
 
 func toRoom(r sqlite.RoomTable) *domain.Room {
 	return &domain.Room{
-		ID:                   r.ID,
-		HostUserID:           r.HostUserID,
-		QuestionCount:        r.QuestionCount,
-		Phase:                domain.RoomPhase(r.Phase),
-		WaitingDeadline:      r.WaitingDeadline,
-		HostOverrideUnlockAt: r.HostOverrideUnlockAt,
-		CreatedAt:            r.CreatedAt,
-		UpdatedAt:            r.UpdatedAt,
+		ID:            r.ID,
+		HostUserID:    r.HostUserID,
+		QuestionCount: r.QuestionCount,
+		Phase:         domain.RoomPhase(r.Phase),
+		CreatedAt:     r.CreatedAt,
+		UpdatedAt:     r.UpdatedAt,
 	}
 }
 
@@ -74,11 +72,35 @@ func (r *RoomRepo) FindRoomByID(ctx context.Context, id string) (*domain.Room, e
 
 func (r *RoomRepo) UpdateRoom(ctx context.Context, room *domain.Room) error {
 	return r.db.WithContext(ctx).Model(&sqlite.RoomTable{}).Where("id = ?", room.ID).Updates(map[string]any{
-		"phase":                   string(room.Phase),
-		"waiting_deadline":        room.WaitingDeadline,
-		"host_override_unlock_at": room.HostOverrideUnlockAt,
-		"updated_at":              time.Now().UTC(),
+		"phase":      string(room.Phase),
+		"updated_at": time.Now().UTC(),
 	}).Error
+}
+
+// FinishRoom transitions the room to "finished" only if it isn't already,
+// returning whether the row was actually updated. Callers use this to make
+// the lobby/playing → finished transition idempotent under concurrent
+// triggers (e.g. two participants submitting their final vote at once).
+func (r *RoomRepo) FinishRoom(ctx context.Context, roomID string) (bool, error) {
+	res := r.db.WithContext(ctx).Model(&sqlite.RoomTable{}).
+		Where("id = ? AND phase != ?", roomID, string(domain.PhaseFinished)).
+		Updates(map[string]any{
+			"phase":      string(domain.PhaseFinished),
+			"updated_at": time.Now().UTC(),
+		})
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
+}
+
+// Transaction runs fn within a database transaction, giving it a repository
+// bound to the transactional connection so all operations commit or roll
+// back together.
+func (r *RoomRepo) Transaction(ctx context.Context, fn func(repo domain.RoomRepository) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return fn(&RoomRepo{db: tx})
+	})
 }
 
 func (r *RoomRepo) DeleteRoom(ctx context.Context, roomID string) error {
@@ -371,16 +393,4 @@ func (r *RoomRepo) ComputeResultSteps(ctx context.Context, roomID string) ([]dom
 		})
 	}
 	return steps, nil
-}
-
-func (r *RoomRepo) ListActiveWaitingRooms(ctx context.Context) ([]domain.Room, error) {
-	var rows []sqlite.RoomTable
-	if err := r.db.WithContext(ctx).Where("phase = ? AND waiting_deadline IS NOT NULL", "waiting").Find(&rows).Error; err != nil {
-		return nil, err
-	}
-	out := make([]domain.Room, len(rows))
-	for i, row := range rows {
-		out[i] = *toRoom(row)
-	}
-	return out, nil
 }

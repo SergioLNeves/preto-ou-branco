@@ -16,8 +16,8 @@ func NewAuthApp(svc *service.AuthService) *AuthApp {
 }
 
 type AuthResult struct {
-	Token    string              `json:"token"`
-	User     domain.UserResponse `json:"user"`
+	Token string              `json:"token"`
+	User  domain.UserResponse `json:"user"`
 }
 
 func (a *AuthApp) CreateAccount(username, password string) (*AuthResult, error) {

@@ -61,7 +61,16 @@ func OpenAt(dbPath string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("seed: %w", err)
 	}
 
+	gcExpiredSessions(db)
+
 	return db, nil
+}
+
+// gcExpiredSessions removes expired sessions on startup so the user_session
+// table doesn't grow unbounded over the app's lifetime. Best-effort: a
+// failure here shouldn't block startup.
+func gcExpiredSessions(db *gorm.DB) {
+	db.Where("expires_at < ?", time.Now().UTC()).Delete(&UserSessionTable{})
 }
 
 type seedQuestion struct {

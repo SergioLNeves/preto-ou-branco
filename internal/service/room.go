@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
@@ -76,16 +78,26 @@ func (s *RoomService) buildState(ctx context.Context, room *domain.Room, viewer 
 	}
 
 	return &domain.RoomState{
-		RoomID:               room.ID,
-		Phase:                room.Phase,
-		QuestionCount:        room.QuestionCount,
-		MyVotedCount:         myVotedCount,
-		Participants:         pResp,
-		Questions:            qResp,
-		MyParticipant:        myPart,
-		WaitingDeadline:      room.WaitingDeadline,
-		HostOverrideUnlockAt: room.HostOverrideUnlockAt,
+		RoomID:        room.ID,
+		Phase:         room.Phase,
+		QuestionCount: room.QuestionCount,
+		MyVotedCount:  myVotedCount,
+		Participants:  pResp,
+		Questions:     qResp,
+		MyParticipant: myPart,
 	}, nil
+}
+
+// validateGuestUsername enforces the same length limit as domain.ErrInvalidUsername
+// (1-24 characters, rune-aware) while remaining permissive about charset —
+// guests pick free-form display names, unlike registered account usernames.
+func validateGuestUsername(username string) error {
+	u := strings.TrimSpace(username)
+	count := utf8.RuneCountInString(u)
+	if count < 1 || count > 24 {
+		return domain.ErrInvalidUsername
+	}
+	return nil
 }
 
 func (s *RoomService) CloseRoom(ctx context.Context, roomID, hostUserID string) error {
@@ -131,6 +143,14 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 		req.QuestionCount = 10
 	}
 
+	questions, err := s.gameSvc.ListRandomQuestions(ctx, req.QuestionCount)
+	if err != nil {
+		return nil, err
+	}
+	if len(questions) == 0 {
+		return nil, domain.ErrNoQuestionsAvailable
+	}
+
 	now := time.Now().UTC()
 	room := &domain.Room{
 		ID:            uuid.New().String(),
@@ -140,30 +160,26 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
-	if err := s.repo.CreateRoom(ctx, room); err != nil {
-		return nil, err
-	}
 
-	questions, err := s.gameSvc.ListRandomQuestions(ctx, req.QuestionCount)
+	err = s.repo.Transaction(ctx, func(repo domain.RoomRepository) error {
+		if err := repo.CreateRoom(ctx, room); err != nil {
+			return err
+		}
+		if err := repo.SnapshotQuestions(ctx, room.ID, questions); err != nil {
+			return err
+		}
+		p := &domain.RoomParticipant{
+			ID:         uuid.New().String(),
+			RoomID:     room.ID,
+			UserID:     &hostUserID,
+			Username:   hostUsername,
+			Emoji:      domain.EmojiPool[0],
+			JoinedAt:   now,
+			LastSeenAt: now,
+		}
+		return repo.AddParticipant(ctx, p)
+	})
 	if err != nil {
-		return nil, err
-	}
-	if err := s.repo.SnapshotQuestions(ctx, room.ID, questions); err != nil {
-		return nil, err
-	}
-
-	count, _ := s.repo.CountParticipants(ctx, room.ID)
-	emoji := domain.EmojiPool[count%len(domain.EmojiPool)]
-	p := &domain.RoomParticipant{
-		ID:         uuid.New().String(),
-		RoomID:     room.ID,
-		UserID:     &hostUserID,
-		Username:   hostUsername,
-		Emoji:      emoji,
-		JoinedAt:   now,
-		LastSeenAt: now,
-	}
-	if err := s.repo.AddParticipant(ctx, p); err != nil {
 		return nil, err
 	}
 
@@ -198,6 +214,10 @@ func (s *RoomService) JoinRoom(ctx context.Context, req domain.JoinRoomRequest, 
 
 	if room.Phase != domain.PhaseLobby {
 		return nil, domain.ErrGameAlreadyStarted
+	}
+
+	if err := validateGuestUsername(req.Username); err != nil {
+		return nil, err
 	}
 
 	count, err := s.repo.CountParticipants(ctx, room.ID)
@@ -283,6 +303,10 @@ func (s *RoomService) SubmitVote(ctx context.Context, roomID string, req domain.
 		return nil, err
 	}
 
+	if req.Choice != domain.ChoicePreto && req.Choice != domain.ChoiceBranco {
+		return nil, domain.ErrInvalidChoice
+	}
+
 	rq, err := s.repo.FindRoomQuestion(ctx, req.RoomQuestionID)
 	if err != nil || rq.RoomID != roomID {
 		return nil, domain.ErrRoomNotFound
@@ -298,8 +322,13 @@ func (s *RoomService) SubmitVote(ctx context.Context, roomID string, req domain.
 		return nil, err
 	}
 
+	questions, err := s.repo.ListRoomQuestions(ctx, roomID)
+	if err != nil {
+		return nil, err
+	}
+
 	votedCount, _ := s.repo.CountVotesByParticipant(ctx, me.ID, roomID)
-	if votedCount >= room.QuestionCount && !me.HasFinished {
+	if votedCount >= len(questions) && !me.HasFinished {
 		me.HasFinished = true
 		_ = s.repo.UpdateParticipant(ctx, me)
 	}
@@ -323,29 +352,18 @@ func (s *RoomService) SubmitVote(ctx context.Context, roomID string, req domain.
 	return s.buildState(ctx, room, viewer)
 }
 
+// transitionToFinished moves the room to "finished" via a conditional UPDATE
+// (phase != 'finished'), so concurrent callers (e.g. two participants
+// submitting their final vote at the same time) only trigger a single
+// game_finished broadcast.
 func (s *RoomService) transitionToFinished(ctx context.Context, room *domain.Room) {
+	changed, err := s.repo.FinishRoom(ctx, room.ID)
+	if err != nil || !changed {
+		return
+	}
 	room.Phase = domain.PhaseFinished
-	_ = s.repo.UpdateRoom(ctx, room)
 	scoreboard, _ := s.repo.ComputeScoreboard(ctx, room.ID)
 	s.hub.Broadcast(room.ID, map[string]any{"type": "game_finished", "payload": scoreboard})
-}
-
-func (s *RoomService) ForceAdvanceReveal(ctx context.Context, roomID, hostUserID string) error {
-	room, err := s.repo.FindRoomByID(ctx, roomID)
-	if err != nil {
-		return err
-	}
-	if room.HostUserID != hostUserID {
-		return domain.ErrNotHost
-	}
-	if room.Phase != domain.PhaseWaiting {
-		return domain.ErrPhaseMismatch
-	}
-	if room.HostOverrideUnlockAt != nil && time.Now().UTC().Before(*room.HostOverrideUnlockAt) {
-		return domain.ErrHostOverrideLocked
-	}
-	s.transitionToFinished(ctx, room)
-	return nil
 }
 
 func (s *RoomService) RestartRoom(ctx context.Context, roomID, hostUserID string) error {
@@ -360,26 +378,29 @@ func (s *RoomService) RestartRoom(ctx context.Context, roomID, hostUserID string
 		return domain.ErrPhaseMismatch
 	}
 
-	if err := s.repo.DeleteRoomQuestions(ctx, roomID); err != nil {
-		return err
-	}
-
 	questions, err := s.gameSvc.ListRandomQuestions(ctx, room.QuestionCount)
 	if err != nil {
 		return err
 	}
-	if err := s.repo.SnapshotQuestions(ctx, roomID, questions); err != nil {
-		return err
-	}
-
-	if err := s.repo.ResetParticipantsFinished(ctx, roomID); err != nil {
-		return err
+	if len(questions) == 0 {
+		return domain.ErrNoQuestionsAvailable
 	}
 
 	room.Phase = domain.PhaseLobby
-	room.WaitingDeadline = nil
-	room.HostOverrideUnlockAt = nil
-	if err := s.repo.UpdateRoom(ctx, room); err != nil {
+
+	err = s.repo.Transaction(ctx, func(repo domain.RoomRepository) error {
+		if err := repo.DeleteRoomQuestions(ctx, roomID); err != nil {
+			return err
+		}
+		if err := repo.SnapshotQuestions(ctx, roomID, questions); err != nil {
+			return err
+		}
+		if err := repo.ResetParticipantsFinished(ctx, roomID); err != nil {
+			return err
+		}
+		return repo.UpdateRoom(ctx, room)
+	})
+	if err != nil {
 		return err
 	}
 
@@ -405,25 +426,4 @@ func (s *RoomService) GetResults(ctx context.Context, roomID string) (*domain.Ro
 		return nil, err
 	}
 	return &domain.RoomResults{RoomID: roomID, Scoreboard: scoreboard, Steps: steps}, nil
-}
-
-func (s *RoomService) Tick(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			rooms, err := s.repo.ListActiveWaitingRooms(ctx)
-			if err != nil {
-				continue
-			}
-			for _, room := range rooms {
-				if room.WaitingDeadline != nil && time.Now().UTC().After(*room.WaitingDeadline) {
-					s.transitionToFinished(ctx, &room)
-				}
-			}
-		}
-	}
 }

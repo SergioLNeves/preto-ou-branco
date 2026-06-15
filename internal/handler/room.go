@@ -34,9 +34,31 @@ func viewerFromCtx(c echo.Context) domain.RoomViewer {
 	return viewer
 }
 
+// userFromCtx safely reads "user_id"/"username" set by the BearerAuth
+// middleware. Returns ok=false (and writes a 401) when missing/wrong-typed —
+// defensive against middleware ordering mistakes, since a raw type assertion
+// would panic and be recovered as a 500 instead.
+func userFromCtx(c echo.Context, key string) (string, bool) {
+	v, ok := c.Get(key).(string)
+	if !ok || v == "" {
+		return "", false
+	}
+	return v, true
+}
+
+func unauthorized(c echo.Context) error {
+	return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+}
+
 func (h *RoomHandler) CreateRoom(c echo.Context) error {
-	hostUserID := c.Get("user_id").(string)
-	hostUsername := c.Get("username").(string)
+	hostUserID, ok := userFromCtx(c, "user_id")
+	if !ok {
+		return unauthorized(c)
+	}
+	hostUsername, ok := userFromCtx(c, "username")
+	if !ok {
+		return unauthorized(c)
+	}
 	var req domain.CreateRoomRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -71,7 +93,10 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 
 func (h *RoomHandler) CloseRoom(c echo.Context) error {
 	roomID := c.Param("id")
-	hostUserID := c.Get("user_id").(string)
+	hostUserID, ok := userFromCtx(c, "user_id")
+	if !ok {
+		return unauthorized(c)
+	}
 	if err := h.svc.CloseRoom(c.Request().Context(), roomID, hostUserID); err != nil {
 		status := http.StatusBadRequest
 		if err == domain.ErrNotHost {
@@ -86,7 +111,10 @@ func (h *RoomHandler) CloseRoom(c echo.Context) error {
 
 func (h *RoomHandler) UpdateRoomSettings(c echo.Context) error {
 	roomID := c.Param("id")
-	hostUserID := c.Get("user_id").(string)
+	hostUserID, ok := userFromCtx(c, "user_id")
+	if !ok {
+		return unauthorized(c)
+	}
 	var req domain.UpdateRoomSettingsRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -105,7 +133,10 @@ func (h *RoomHandler) UpdateRoomSettings(c echo.Context) error {
 
 func (h *RoomHandler) StartRoom(c echo.Context) error {
 	roomID := c.Param("id")
-	hostUserID := c.Get("user_id").(string)
+	hostUserID, ok := userFromCtx(c, "user_id")
+	if !ok {
+		return unauthorized(c)
+	}
 	if err := h.svc.StartGame(c.Request().Context(), roomID, hostUserID); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
@@ -114,7 +145,10 @@ func (h *RoomHandler) StartRoom(c echo.Context) error {
 
 func (h *RoomHandler) RestartRoom(c echo.Context) error {
 	roomID := c.Param("id")
-	hostUserID := c.Get("user_id").(string)
+	hostUserID, ok := userFromCtx(c, "user_id")
+	if !ok {
+		return unauthorized(c)
+	}
 	if err := h.svc.RestartRoom(c.Request().Context(), roomID, hostUserID); err != nil {
 		status := http.StatusBadRequest
 		if err == domain.ErrNotHost {
@@ -153,19 +187,6 @@ func (h *RoomHandler) SubmitRoomVote(c echo.Context) error {
 		return c.JSON(status, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, state)
-}
-
-func (h *RoomHandler) ForceAdvanceReveal(c echo.Context) error {
-	roomID := c.Param("id")
-	hostUserID := c.Get("user_id").(string)
-	if err := h.svc.ForceAdvanceReveal(c.Request().Context(), roomID, hostUserID); err != nil {
-		status := http.StatusBadRequest
-		if err == domain.ErrHostOverrideLocked {
-			status = http.StatusTooEarly
-		}
-		return c.JSON(status, map[string]string{"error": err.Error()})
-	}
-	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *RoomHandler) GetRoomResults(c echo.Context) error {

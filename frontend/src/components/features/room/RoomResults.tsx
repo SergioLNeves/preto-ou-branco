@@ -25,13 +25,15 @@ export function RoomResults({ results, state }: Props) {
     steps.length === 0 ? "winner" : "revealing",
   );
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const winnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gainedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const advance = useCallback(() => {
     setCurrentStep((prev) => {
       const next = prev + 1;
       if (next >= steps.length) {
         if (timerRef.current) clearInterval(timerRef.current);
-        setTimeout(() => setPhase("winner"), WINNER_DELAY);
+        winnerTimeoutRef.current = setTimeout(() => setPhase("winner"), WINNER_DELAY);
         return prev;
       }
       const step = steps[next];
@@ -47,7 +49,8 @@ export function RoomResults({ results, state }: Props) {
         return updated;
       });
       setJustGained(gainers);
-      setTimeout(() => setJustGained(new Set()), 900);
+      if (gainedTimeoutRef.current) clearTimeout(gainedTimeoutRef.current);
+      gainedTimeoutRef.current = setTimeout(() => setJustGained(new Set()), 900);
       return next;
     });
   }, [steps]);
@@ -58,8 +61,19 @@ export function RoomResults({ results, state }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [advance, phase]);
 
+  // Clear pending timeouts on unmount — prevents setState-after-unmount when
+  // the host restarts/closes the room mid-reveal.
+  useEffect(() => {
+    return () => {
+      if (winnerTimeoutRef.current) clearTimeout(winnerTimeoutRef.current);
+      if (gainedTimeoutRef.current) clearTimeout(gainedTimeoutRef.current);
+    };
+  }, []);
+
   function skipToEnd() {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (winnerTimeoutRef.current) clearTimeout(winnerTimeoutRef.current);
+    if (gainedTimeoutRef.current) clearTimeout(gainedTimeoutRef.current);
     const finalScores: Record<string, number> = Object.fromEntries(
       scoreboard.map((e) => [e.participant_id, e.points]),
     );

@@ -1,12 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { withWails } from "@/lib/server-url";
 import { apiPost } from "@/lib/api-client";
+import type { AuthResult } from "@/types/auth";
 import { authKeys } from "./queries";
-
-interface AuthResult {
-  token: string;
-  user: unknown;
-}
 
 export function useLogin() {
   const queryClient = useQueryClient();

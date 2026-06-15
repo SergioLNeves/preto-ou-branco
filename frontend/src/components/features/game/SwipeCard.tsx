@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import type { Choice, Question } from "@/types/game";
 
@@ -94,24 +93,17 @@ export function SwipeCard({ question, currentIndex, total, disabled, onAnswer, o
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 h-[72px] z-30 flex items-center justify-between px-8 pointer-events-none">
         <div className="flex items-center gap-4">
-          {onBack !== null && (() => {
+          {onBack && (() => {
             const icon = (
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M10 3L5 8l5 5" />
               </svg>
             );
             const baseClass = "flex items-center gap-2 text-xs font-bold tracking-[0.25em] uppercase transition-colors shrink-0 pointer-events-auto";
-            if (onBack !== undefined) {
-              return (
-                <button type="button" onClick={() => void onBack()} className={`${baseClass} cursor-pointer`} style={{ color: topBarTextColor }}>
-                  {icon} Início
-                </button>
-              );
-            }
             return (
-              <Link to="/dashboard" className={baseClass} style={{ color: topBarTextColor }}>
+              <button type="button" onClick={() => void onBack()} className={`${baseClass} cursor-pointer`} style={{ color: topBarTextColor }}>
                 {icon} Início
-              </Link>
+              </button>
             );
           })()}
           <div className="w-28 h-0.5 bg-[rgba(128,128,128,0.4)] rounded-full overflow-hidden">

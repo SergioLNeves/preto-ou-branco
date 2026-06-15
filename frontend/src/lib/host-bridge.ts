@@ -74,15 +74,26 @@ const wailsBridge: HostBridge = {
 
 // ── Implementação Capacitor ────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const nativePlugin = (): any => (Capacitor as any).Plugins?.MobilePlugin;
+/** Surface of the native MobilePlugin (Android) that host-bridge depends on. */
+interface MobilePlugin {
+  startTunnel: () => Promise<void>;
+  stopTunnel: () => Promise<void>;
+  getServerStatus: () => Promise<ServerStatus>;
+}
+
+function nativePlugin(): MobilePlugin {
+  const plugins = (Capacitor as unknown as { Plugins: { MobilePlugin?: MobilePlugin } }).Plugins;
+  if (!plugins.MobilePlugin) {
+    throw new Error("MobilePlugin não disponível neste runtime");
+  }
+  return plugins.MobilePlugin;
+}
 
 const capacitorBridge: HostBridge = {
   isHost: () => true,
 
   async startTunnel() {
-    const result = await nativePlugin().startTunnel();
-    return result;
+    await nativePlugin().startTunnel();
   },
 
   async stopTunnel() {
@@ -90,9 +101,8 @@ const capacitorBridge: HostBridge = {
   },
 
   async getServerStatus(): Promise<ServerStatus> {
-    const raw = await nativePlugin().getServerStatus();
     // MobilePlugin.getServerStatus resolves with a JSObject parsed from JSON
-    return raw as ServerStatus;
+    return nativePlugin().getServerStatus();
   },
 };
 

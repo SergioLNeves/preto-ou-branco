@@ -1,6 +1,5 @@
 package com.pretoobranco.app
 
-import android.content.Intent
 import android.util.Log
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
@@ -16,40 +15,17 @@ private const val TAG = "MobilePlugin"
  *
  * Registered in MainActivity via addPlugin(MobilePlugin::class.java).
  *
+ * HostService (and therefore the Go server) is started/stopped solely by
+ * MainActivity — see its onCreate(). Keeping a single start point avoids
+ * racing two independent "start the server" entry points.
+ *
  * JavaScript usage (via host-bridge.ts):
- *   Capacitor.Plugins.MobilePlugin.startServer()
  *   Capacitor.Plugins.MobilePlugin.startTunnel({ path: "..." })
  *   Capacitor.Plugins.MobilePlugin.getServerStatus()
  *   Capacitor.Plugins.MobilePlugin.stopTunnel()
- *   Capacitor.Plugins.MobilePlugin.stopServer()
  */
 @CapacitorPlugin(name = "MobilePlugin")
 class MobilePlugin : Plugin() {
-
-    /** Starts HostService (which starts the Go server). */
-    @PluginMethod
-    fun startServer(call: PluginCall) {
-        try {
-            val intent = Intent(context, HostService::class.java)
-            context.startForegroundService(intent)
-            call.resolve()
-        } catch (e: Exception) {
-            Log.e(TAG, "startServer failed: ${e.message}")
-            call.reject(e.message)
-        }
-    }
-
-    /** Stops HostService and the Go server. */
-    @PluginMethod
-    fun stopServer(call: PluginCall) {
-        try {
-            val intent = Intent(context, HostService::class.java)
-            context.stopService(intent)
-            call.resolve()
-        } catch (e: Exception) {
-            call.reject(e.message)
-        }
-    }
 
     /**
      * Starts the Cloudflare tunnel. cloudflared ships as a native library

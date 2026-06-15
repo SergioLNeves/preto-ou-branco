@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import QRCode from "react-qr-code";
 import { QrCode } from "lucide-react";
+import { toast } from "sonner";
 import { meQueryOptions } from "@/infra/auth/queries";
 import { useStartRoom, useUpdateRoomSettings, useCloseRoom } from "@/infra/room/mutations";
 import { ParticipantAvatar } from "./ParticipantAvatar";
@@ -28,7 +29,11 @@ export function RoomLobby({ state }: Props) {
     } catch {
       // sala pode já ter sido removida, continua
     }
-    if (hostBridge.isHost()) await hostBridge.stopTunnel().catch(() => {});
+    if (hostBridge.isHost()) {
+      await hostBridge.stopTunnel().catch(() => {
+        toast.error("Não foi possível parar o túnel Cloudflare");
+      });
+    }
     void navigate({ to: "/dashboard" });
   }
   const count = state.participants.length;
@@ -61,7 +66,9 @@ export function RoomLobby({ state }: Props) {
       await hostBridge.startTunnel();
       await queryClient.invalidateQueries({ queryKey: ["server-status"] });
     } catch (err) {
-      setTunnelError(err instanceof Error ? err.message : "Falha ao conectar com o Cloudflare");
+      const message = err instanceof Error ? err.message : "Falha ao conectar com o Cloudflare";
+      setTunnelError(message);
+      toast.error(message);
     } finally {
       setTunnelLoading(false);
     }
@@ -70,11 +77,28 @@ export function RoomLobby({ state }: Props) {
   const avatarSize: "sm" | "md" | "lg" =
     count <= 4 ? "lg" : count <= 9 ? "md" : "sm";
 
+  // Close the QR modal with Escape for keyboard users.
+  useEffect(() => {
+    if (!showQR) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowQR(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showQR]);
+
   async function handleCopy() {
     if (!shareLink) return;
-    await navigator.clipboard.writeText(shareLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      // navigator.clipboard is undefined in non-secure contexts (e.g.
+      // http://192.168.x.x:8080 on the LAN), so this throws there.
+      if (!navigator.clipboard) throw new Error("clipboard API unavailable");
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.info("Não foi possível copiar automaticamente. Selecione e copie o link manualmente.");
+    }
   }
 
   return (
@@ -115,6 +139,7 @@ export function RoomLobby({ state }: Props) {
                 type="button"
                 onClick={() => setShowQR(true)}
                 title="Ver QR code"
+                aria-label="Ver QR code para entrar na sala"
                 className="shrink-0 p-2 border border-[rgba(245,245,245,0.2)] hover:border-[rgba(245,245,245,0.5)] transition-colors cursor-pointer"
               >
                 <QrCode size={16} className="text-[rgba(245,245,245,0.7)]" />
@@ -157,6 +182,9 @@ export function RoomLobby({ state }: Props) {
       {/* QR modal */}
       {showQR && shareLink && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="QR code para entrar na sala"
           className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.85)]"
           onClick={() => setShowQR(false)}
         >

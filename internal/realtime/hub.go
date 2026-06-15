@@ -24,11 +24,11 @@ type Client struct {
 }
 
 type Hub struct {
-	mu      sync.RWMutex
-	rooms   map[string]map[*Client]struct{}
-	reg     chan *Client
-	unreg   chan *Client
-	done    chan struct{}
+	mu    sync.RWMutex
+	rooms map[string]map[*Client]struct{}
+	reg   chan *Client
+	unreg chan *Client
+	done  chan struct{}
 }
 
 func NewHub() *Hub {

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import type { Choice, Question } from "@/types/game";
 import { useIsTouch } from "@/hooks/use-is-touch";
@@ -66,7 +65,7 @@ function QuestionCardDesktop({ question, currentIndex, total, disabled, onAnswer
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 h-[72px] z-30 flex overflow-hidden">
         <div className="flex-1 flex items-center px-12 gap-6">
-          {onBack !== null && (() => {
+          {onBack && (() => {
             const cls = cn(
               "flex items-center gap-2 text-xs font-bold tracking-[0.25em] uppercase transition-colors shrink-0",
               active === "preto"
@@ -78,17 +77,10 @@ function QuestionCardDesktop({ question, currentIndex, total, disabled, onAnswer
                 <path d="M10 3L5 8l5 5" />
               </svg>
             );
-            if (onBack !== undefined) {
-              return (
-                <button type="button" onClick={() => void onBack()} className={`${cls} cursor-pointer`}>
-                  {icon} Início
-                </button>
-              );
-            }
             return (
-              <Link to="/dashboard" className={cls}>
+              <button type="button" onClick={() => void onBack()} className={`${cls} cursor-pointer`}>
                 {icon} Início
-              </Link>
+              </button>
             );
           })()}
           <div className="w-32 h-0.5 bg-[rgba(128,128,128,0.3)] rounded-full overflow-hidden">

@@ -1,7 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { hostBridge } from "@/lib/host-bridge";
-import { isWails } from "@/lib/server-url";
-import { getServerBaseURL } from "@/lib/server-url";
+import { isWails, getServerBaseURL } from "@/lib/server-url";
 import type { User } from "@/types/auth";
 
 export const authKeys = {

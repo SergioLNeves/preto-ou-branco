@@ -12,11 +12,12 @@ var (
 	ErrRoomNotFound         = fmt.Errorf("room not found")
 	ErrRoomFull             = fmt.Errorf("room is full")
 	ErrNotHost              = fmt.Errorf("only the host can perform this action")
-	ErrAlreadyJoined        = fmt.Errorf("already in this room")
 	ErrPhaseMismatch        = fmt.Errorf("action not allowed in current phase")
 	ErrParticipantNotInRoom = fmt.Errorf("participant not in room")
-	ErrHostOverrideLocked   = fmt.Errorf("host override not unlocked yet")
 	ErrGameAlreadyStarted   = fmt.Errorf("game already started")
+	ErrInvalidChoice        = fmt.Errorf("choice must be 'preto' or 'branco'")
+	ErrInvalidUsername      = fmt.Errorf("username must be 1-24 characters")
+	ErrNoQuestionsAvailable = fmt.Errorf("no questions available")
 )
 
 type RoomPhase string
@@ -24,8 +25,13 @@ type RoomPhase string
 const (
 	PhaseLobby    RoomPhase = "lobby"
 	PhasePlaying  RoomPhase = "playing"
-	PhaseWaiting  RoomPhase = "waiting"
 	PhaseFinished RoomPhase = "finished"
+)
+
+// ChoicePreto and ChoiceBranco are the only valid vote choices.
+const (
+	ChoicePreto  = "preto"
+	ChoiceBranco = "branco"
 )
 
 var EmojiPool = []string{
@@ -36,14 +42,12 @@ var EmojiPool = []string{
 }
 
 type Room struct {
-	ID                   string
-	HostUserID           string
-	QuestionCount        int
-	Phase                RoomPhase
-	WaitingDeadline      *time.Time
-	HostOverrideUnlockAt *time.Time
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	ID            string
+	HostUserID    string
+	QuestionCount int
+	Phase         RoomPhase
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type RoomParticipant struct {
@@ -121,9 +125,6 @@ type RoomState struct {
 	Questions     []RoomQuestionResponse    `json:"questions"`
 	MyParticipant RoomParticipantResponse   `json:"my_participant"`
 	GuestToken    *string                   `json:"guest_token,omitempty"`
-
-	WaitingDeadline      *time.Time `json:"waiting_deadline,omitempty"`
-	HostOverrideUnlockAt *time.Time `json:"host_override_unlock_at,omitempty"`
 }
 
 type ScoreboardEntry struct {
@@ -155,11 +156,9 @@ type RoomService interface {
 	JoinRoom(ctx context.Context, req JoinRoomRequest, viewer RoomViewer) (*RoomState, error)
 	StartGame(ctx context.Context, roomID, hostUserID string) error
 	SubmitVote(ctx context.Context, roomID string, req SubmitRoomVoteRequest, viewer RoomViewer) (*RoomState, error)
-	ForceAdvanceReveal(ctx context.Context, roomID, hostUserID string) error
 	RestartRoom(ctx context.Context, roomID, hostUserID string) error
 	GetRoomState(ctx context.Context, roomID string, viewer RoomViewer) (*RoomState, error)
 	GetResults(ctx context.Context, roomID string) (*RoomResults, error)
-	Tick(ctx context.Context)
 }
 
 type RoomRepository interface {
@@ -185,5 +184,6 @@ type RoomRepository interface {
 	ListVotesForQuestion(ctx context.Context, roomQuestionID string) ([]RoomVote, error)
 	ComputeScoreboard(ctx context.Context, roomID string) ([]ScoreboardEntry, error)
 	ComputeResultSteps(ctx context.Context, roomID string) ([]ResultStep, error)
-	ListActiveWaitingRooms(ctx context.Context) ([]Room, error)
+	FinishRoom(ctx context.Context, roomID string) (bool, error)
+	Transaction(ctx context.Context, fn func(repo RoomRepository) error) error
 }

@@ -85,7 +85,6 @@ func startHTTPServer(
 	rooms.DELETE("/:id", roomHandler.CloseRoom, bearerAuth)
 	rooms.PATCH("/:id/settings", roomHandler.UpdateRoomSettings, bearerAuth)
 	rooms.POST("/:id/start", roomHandler.StartRoom, bearerAuth)
-	rooms.POST("/:id/force-reveal", roomHandler.ForceAdvanceReveal, bearerAuth)
 	rooms.POST("/:id/restart", roomHandler.RestartRoom, bearerAuth)
 	rooms.GET("/:id/state", roomHandler.GetRoomState, roomIdentity)
 	rooms.GET("/:id/results", roomHandler.GetRoomResults, roomIdentity)
@@ -103,7 +102,6 @@ func startHTTPServer(
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	bindings.InitContext(a.serverApp, ctx)
-	go a.roomSvc.Tick(ctx)
 }
 
 // LocalIP returns the machine's LAN IPv4 address for sharing with guests.

@@ -61,11 +61,3 @@ export function useSubmitRoomVote(roomId: string) {
     onSuccess: (data) => queryClient.setQueryData(roomKeys.state(roomId), data),
   });
 }
-
-export function useForceReveal(roomId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => apiPost<void>(`/v1/rooms/${roomId}/force-reveal`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: roomKeys.state(roomId) }),
-  });
-}

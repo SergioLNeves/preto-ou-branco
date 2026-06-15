@@ -47,27 +47,25 @@ func (UserSessionTable) TableName() string { return "user_session" }
 // Room tables
 
 type RoomTable struct {
-	ID                   string    `gorm:"type:varchar(36);primary_key"`
-	HostUserID           string    `gorm:"type:varchar(36);not null"`
-	QuestionCount        int       `gorm:"not null"`
-	Phase                string    `gorm:"type:varchar(16);not null;default:'lobby'"`
-	WaitingDeadline      *time.Time
-	HostOverrideUnlockAt *time.Time
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	ID            string `gorm:"type:varchar(36);primary_key"`
+	HostUserID    string `gorm:"type:varchar(36);not null"`
+	QuestionCount int    `gorm:"not null"`
+	Phase         string `gorm:"type:varchar(16);not null;default:'lobby'"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func (RoomTable) TableName() string { return "room" }
 
 type RoomParticipantTable struct {
-	ID          string     `gorm:"type:varchar(36);primary_key"`
-	RoomID      string     `gorm:"type:varchar(36);not null;index"`
-	Room        RoomTable  `gorm:"foreignKey:RoomID;constraint:OnDelete:CASCADE"`
-	UserID      *string    `gorm:"type:varchar(36);index"`
-	Username    string     `gorm:"type:varchar(64);not null"`
-	Emoji       string     `gorm:"type:varchar(8);not null"`
-	GuestToken  *string    `gorm:"type:varchar(36);uniqueIndex"`
-	HasFinished bool       `gorm:"not null;default:false"`
+	ID          string    `gorm:"type:varchar(36);primary_key"`
+	RoomID      string    `gorm:"type:varchar(36);not null;index"`
+	Room        RoomTable `gorm:"foreignKey:RoomID;constraint:OnDelete:CASCADE"`
+	UserID      *string   `gorm:"type:varchar(36);index"`
+	Username    string    `gorm:"type:varchar(64);not null"`
+	Emoji       string    `gorm:"type:varchar(8);not null"`
+	GuestToken  *string   `gorm:"type:varchar(36);uniqueIndex"`
+	HasFinished bool      `gorm:"not null;default:false"`
 	JoinedAt    time.Time
 	LastSeenAt  time.Time
 }

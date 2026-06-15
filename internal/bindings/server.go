@@ -207,13 +207,14 @@ func (s *ServerApp) StartTunnel() (string, error) {
 			}
 			if url := extractCFURL(line); url != "" {
 				urlCh <- url
-				for scanner.Scan() {} // drain
+				for scanner.Scan() {
+				} // drain
 				return
 			}
 		}
 		// Collect recent output to surface a useful error
-		context := strings.Join(lastLines, " | ")
-		errCh <- fmt.Errorf("cloudflared encerrou sem fornecer URL. Saída: %s", context)
+		recentOutput := strings.Join(lastLines, " | ")
+		errCh <- fmt.Errorf("cloudflared encerrou sem fornecer URL. Saída: %s", recentOutput)
 	}()
 
 	select {

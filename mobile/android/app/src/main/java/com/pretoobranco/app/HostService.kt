@@ -21,7 +21,10 @@ private const val TAG = "HostService"
  * device is hosting a room. Android kills background processes aggressively;
  * the foreground service + persistent notification prevent that.
  *
- * Started by MobilePlugin.startServer(); stopped by MobilePlugin.stopServer().
+ * Started directly via Intent by MainActivity.onCreate() on a fresh process
+ * start (single start point — avoids racing with the unused
+ * MobilePlugin.startServer/stopServer Capacitor API). Stopped via
+ * MobilePlugin.stopServer() or system shutdown.
  */
 class HostService : Service() {
 
@@ -55,7 +58,11 @@ class HostService : Service() {
             }
         }.start()
 
-        return START_STICKY
+        // NOT_STICKY: hosting requires the user to be actively in the app (a
+        // room open on screen). If Android kills this process under memory
+        // pressure, restarting the Go server with no UI/owner would just leave
+        // a ghost server + tunnel running with nobody managing it.
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {

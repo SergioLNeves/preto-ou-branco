@@ -1,4 +1,4 @@
-export type RoomPhase = "lobby" | "playing" | "waiting" | "finished";
+export type RoomPhase = "lobby" | "playing" | "finished";
 
 export interface RoomParticipant {
   id: string;
@@ -22,8 +22,6 @@ export interface RoomState {
   questions: RoomQuestion[];
   my_participant: RoomParticipant;
   guest_token?: string;
-  waiting_deadline?: string;
-  host_override_unlock_at?: string;
 }
 
 export interface ScoreboardEntry {

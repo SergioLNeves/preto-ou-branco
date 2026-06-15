@@ -25,6 +25,7 @@ type tunnelManager struct {
 	mu         sync.Mutex
 	cmd        *exec.Cmd
 	cancelFunc context.CancelFunc
+	done       chan struct{}
 	publicURL  string
 }
 
@@ -35,7 +36,8 @@ func newTunnelManager() *tunnelManager {
 // start launches cloudflared. cloudflaredPath is the full path to the binary;
 // on Android the Kotlin side extracts it from assets and passes the path here.
 // Pass empty string on desktop — it will download the binary to the cache dir.
-func (t *tunnelManager) start(cloudflaredPath string) (string, error) {
+// port is the local HTTP port the game server is listening on.
+func (t *tunnelManager) start(cloudflaredPath string, port int) (string, error) {
 	t.mu.Lock()
 	if t.cmd != nil {
 		url := t.publicURL
@@ -56,7 +58,7 @@ func (t *tunnelManager) start(cloudflaredPath string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	pr, pw := io.Pipe()
 	cmd := exec.CommandContext(ctx, binPath,
-		"tunnel", "--url", "http://localhost:8080",
+		"tunnel", "--url", fmt.Sprintf("http://localhost:%d", port),
 		"--no-autoupdate",
 		"--output", "json",
 	)
@@ -70,14 +72,35 @@ func (t *tunnelManager) start(cloudflaredPath string) (string, error) {
 
 	if err := cmd.Start(); err != nil {
 		cancel()
-		pw.Close()
-		pr.Close()
+		_ = pw.Close()
+		_ = pr.Close()
 		return "", fmt.Errorf("erro ao iniciar cloudflared: %w", err)
 	}
 
+	done := make(chan struct{})
+
+	// Register the running process immediately so stop()/status() observe it
+	// even if start() is still waiting for cloudflared to print its URL.
+	t.mu.Lock()
+	t.cmd = cmd
+	t.cancelFunc = cancel
+	t.done = done
+	t.mu.Unlock()
+
+	// This goroutine is the single owner of cmd.Wait() for the process's
+	// whole lifetime — stop() never calls Wait itself, it only cancels and
+	// waits on `done`. When the process exits on its own (e.g. cloudflared
+	// dropped by the OS after a network change), this also clears cmd/
+	// publicURL so status() stops reporting an active tunnel with a dead link.
 	go func() {
 		_ = cmd.Wait()
-		pw.Close()
+		_ = pw.Close()
+		t.mu.Lock()
+		t.cmd = nil
+		t.cancelFunc = nil
+		t.publicURL = ""
+		t.mu.Unlock()
+		close(done)
 	}()
 
 	urlCh := make(chan string, 1)
@@ -94,7 +117,8 @@ func (t *tunnelManager) start(cloudflaredPath string) (string, error) {
 			}
 			if url := extractCFURL(line); url != "" {
 				urlCh <- url
-				for scanner.Scan() {} // drain
+				for scanner.Scan() {
+				} // drain
 				return
 			}
 		}
@@ -104,33 +128,39 @@ func (t *tunnelManager) start(cloudflaredPath string) (string, error) {
 	select {
 	case url := <-urlCh:
 		t.mu.Lock()
-		t.cmd = cmd
-		t.cancelFunc = cancel
 		t.publicURL = url
 		t.mu.Unlock()
 		log.Printf("tunnel ativo: %s", url)
 		return url, nil
 	case err := <-errCh:
 		cancel()
+		<-done
 		return "", err
 	case <-time.After(45 * time.Second):
 		cancel()
+		<-done
 		return "", fmt.Errorf("timeout aguardando cloudflared (45s)")
 	}
 }
 
+// stop cancels the running cloudflared process, if any, and waits (with a
+// timeout) for the start() goroutine to observe its exit and clear the
+// manager state. It never calls cmd.Wait() itself — see start().
 func (t *tunnelManager) stop() {
 	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.cancelFunc != nil {
-		t.cancelFunc()
-		t.cancelFunc = nil
+	cancel := t.cancelFunc
+	done := t.done
+	t.mu.Unlock()
+
+	if cancel == nil {
+		return
 	}
-	if t.cmd != nil {
-		_ = t.cmd.Wait()
-		t.cmd = nil
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
 	}
-	t.publicURL = ""
 }
 
 func (t *tunnelManager) status() tunnelStatus {
@@ -159,13 +189,13 @@ func downloadCloudflaredBinary() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("download falhou: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := io.Copy(f, resp.Body); err != nil {
 		return "", err
 	}

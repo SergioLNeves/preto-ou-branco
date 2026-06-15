@@ -27,7 +27,10 @@ jobs:
       ANDROID_PLATFORM: "36"
       ANDROID_BUILD_TOOLS: "36.0.0"
       ANDROID_NDK_VERSION: "28.2.13676358"
-      APK_NAME: preto-android-debug.apk
+      # Pinned (not @latest) so an upstream gomobile change can't silently
+      # break this build — bump deliberately alongside go.mod's Go version.
+      GOMOBILE_VERSION: "v0.0.0-20260611195102-4dd8f1dbf5d2"
+      APK_NAME: preto-android.apk
 
     steps:
       - name: Checkout
@@ -72,7 +75,7 @@ jobs:
 
       - name: Install gomobile
         run: |
-          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gomobile@${GOMOBILE_VERSION}
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Initialize gomobile
@@ -116,12 +119,25 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
+      # Release builds are signed with the keystore from secrets when present
+      # (RELEASE_KEYSTORE_BASE64 + companion passwords/alias). Without those
+      # secrets configured, the build falls back to the debug keystore — see
+      # app/build.gradle — so the workflow still produces an installable APK.
+      - name: Decode release keystore
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
       - name: Build Android APK
         working-directory: mobile/android
-        run: chmod +x ./gradlew && ./gradlew assembleDebug
+        run: chmod +x ./gradlew && ./gradlew assembleRelease
 
       - name: Stage APK
-        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/${APK_NAME}"
+        run: cp mobile/android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/${APK_NAME}"
 
       - name: Resolve release tag
         id: release_tag

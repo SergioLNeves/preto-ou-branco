@@ -64,6 +64,8 @@ function UserRoute() {
           <button
             key={emoji}
             type="button"
+            aria-label={`Avatar ${emoji}`}
+            aria-pressed={selected === emoji}
             onClick={() => handleSelect(emoji)}
             className={`w-10 h-10 rounded-full flex items-center justify-center text-[20px] border-2 transition-all cursor-pointer
               ${selected === emoji

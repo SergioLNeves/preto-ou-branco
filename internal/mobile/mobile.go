@@ -43,8 +43,8 @@ type mobileServer struct {
 	echo    *echo.Echo
 	db      *gorm.DB
 	roomSvc *service.RoomService
-	cancel  context.CancelFunc
 	tunnel  *tunnelManager
+	port    int
 }
 
 // StartServer boots SQLite, registers all HTTP/WS routes and starts the room ticker.
@@ -96,13 +96,23 @@ func StartServer(dbPath string, port int) error {
 	auth.GET("/me", authHandler.Me)
 	auth.POST("/logout", authHandler.Logout)
 
+	tunnel := newTunnelManager()
+
 	rooms := v1.Group("/rooms")
 	rooms.POST("", roomHandler.CreateRoom, bearerAuth)
 	rooms.POST("/join", roomHandler.JoinRoom, optionalIdentity)
-	rooms.DELETE("/:id", roomHandler.CloseRoom, bearerAuth)
+	// Closing the room also tears down the Cloudflare tunnel — there's no
+	// point keeping a public URL alive once the host's room is gone, and it
+	// stops cloudflared from lingering as a background process on Android.
+	rooms.DELETE("/:id", func(c echo.Context) error {
+		err := roomHandler.CloseRoom(c)
+		if err == nil && c.Response().Status == http.StatusNoContent {
+			tunnel.stop()
+		}
+		return err
+	}, bearerAuth)
 	rooms.PATCH("/:id/settings", roomHandler.UpdateRoomSettings, bearerAuth)
 	rooms.POST("/:id/start", roomHandler.StartRoom, bearerAuth)
-	rooms.POST("/:id/force-reveal", roomHandler.ForceAdvanceReveal, bearerAuth)
 	rooms.POST("/:id/restart", roomHandler.RestartRoom, bearerAuth)
 	rooms.GET("/:id/state", roomHandler.GetRoomState, roomIdentity)
 	rooms.GET("/:id/results", roomHandler.GetRoomResults, roomIdentity)
@@ -134,22 +144,18 @@ func StartServer(dbPath string, port int) error {
 	}
 	e.Listener = ln
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	go func() {
 		if err := e.Start(""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("HTTP server stopped: %v", err)
 		}
 	}()
 
-	go roomSvc.Tick(ctx)
-
 	srv = &mobileServer{
 		echo:    e,
 		db:      db,
 		roomSvc: roomSvc,
-		cancel:  cancel,
-		tunnel:  newTunnelManager(),
+		tunnel:  tunnel,
+		port:    port,
 	}
 	lastError = ""
 	return nil
@@ -164,7 +170,6 @@ func StopServer() error {
 		return nil
 	}
 
-	srv.cancel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.echo.Shutdown(ctx); err != nil {
@@ -197,7 +202,7 @@ func StartTunnel(cloudflaredPath string) (string, error) {
 	if t == nil {
 		return "", fmt.Errorf("servidor não está rodando — chame StartServer primeiro")
 	}
-	return t.tunnel.start(cloudflaredPath)
+	return t.tunnel.start(cloudflaredPath, t.port)
 }
 
 // StopTunnel stops the Cloudflare tunnel process.
