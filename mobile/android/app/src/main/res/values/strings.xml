@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Preto ou Branco</string>
-    <string name="title_activity_main">Preto ou Branco</string>
+    <string name="app_name">PretoOuBranco</string>
+    <string name="title_activity_main">PretoOuBranco</string>
     <string name="package_name">com.pretoobranco.app</string>
     <string name="custom_url_scheme">com.pretoobranco.app</string>
 </resources>
