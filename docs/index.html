@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preto ou Branco — Jogue com seus amigos</title>
+  <meta name="description" content="Multiplayer de perguntas para jogar com amigos. O host roda no Android e os convidados entram pelo navegador — sem instalar nada." />
+
+  <!-- Open Graph -->
+  <meta property="og:title"       content="Preto ou Branco" />
+  <meta property="og:description" content="Jogue com seus amigos. Perguntas aleatórias. Não leve a sério." />
+  <meta property="og:image"       content="./assets/logo-universal.png" />
+  <meta property="og:url"         content="https://sergiolneves.github.io/preto-ou-branco/" />
+  <meta property="og:type"        content="website" />
+  <meta name="twitter:card"       content="summary_large_image" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="icon"       type="image/png" href="./assets/logo-universal.png" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════ NAV ═══════════════════════════════════════ -->
+  <nav class="nav">
+    <span class="nav-logo">POB</span>
+    <a class="nav-github"
+       href="https://github.com/SergioLNeves/preto-ou-branco"
+       target="_blank" rel="noopener">
+      GitHub&nbsp;↗
+    </a>
+  </nav>
+
+  <!-- ═══════════════ HERO ══════════════════════════════════════ -->
+  <section class="hero">
+
+    <!-- Metades interativas -->
+    <div class="hero-half hero-half--white">
+      <h1 class="hero-word">Preto</h1>
+    </div>
+    <div class="hero-half hero-half--black">
+      <h1 class="hero-word">Branco</h1>
+    </div>
+
+    <!-- Badge central -->
+    <div class="hero-ou" aria-hidden="true">OU</div>
+
+    <!-- Subtítulo + CTA fixos na parte de baixo -->
+    <div class="hero-bottom">
+      <p class="hero-sub">
+        Jogue com seus amigos.<br />
+        Perguntas aleatórias.<br />
+        Não leve a sério.
+      </p>
+      <a class="btn btn--primary"
+         href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Baixar para Android
+      </a>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════ FEATURES ══════════════════════════════════ -->
+  <section class="features" aria-label="Destaques do jogo">
+    <div class="features-inner">
+
+      <div class="feature-card">
+        <span class="feature-icon" aria-hidden="true">🎲</span>
+        <h3 class="feature-title">480 perguntas</h3>
+        <p class="feature-desc">
+          Sorteadas de 4 categorias: Moda, Música, Aventura e Comportamento.
+          Cada rodada é diferente.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon" aria-hidden="true">📡</span>
+        <h3 class="feature-title">Multiplayer por link</h3>
+        <p class="feature-desc">
+          Compartilhe o link ou QR code. Até 32 jogadores entram pelo
+          navegador — sem instalar nada.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon" aria-hidden="true">😅</span>
+        <h3 class="feature-title">É tudo brincadeira</h3>
+        <p class="feature-desc">
+          Não existe resposta certa. Pontua quem souber ler a sala e votar
+          igual à maioria.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ COMO FUNCIONA ═════════════════════════════ -->
+  <section class="how" aria-label="Como funciona">
+    <div class="how-inner">
+
+      <!-- Texto (lado esquerdo) -->
+      <div class="how-left">
+        <p class="how-eyebrow">Como funciona</p>
+        <h2 class="how-title">Simples assim.</h2>
+
+        <ol class="steps" aria-label="Passo a passo">
+          <li class="step">
+            <p>
+              <strong>Host cria a sala</strong> no app Android e compartilha
+              um link ou QR code.
+            </p>
+          </li>
+          <li class="step">
+            <p>
+              <strong>Amigos entram pelo navegador</strong> — sem precisar
+              instalar nada.
+            </p>
+          </li>
+          <li class="step">
+            <p>
+              Todos recebem a mesma pergunta e votam:
+              <strong>Preto</strong> ou <strong>Branco</strong>.
+            </p>
+          </li>
+          <li class="step">
+            <p>
+              <strong>Quem votar com a maioria pontua.</strong>
+              No fim, um pódio revela quem conhecia melhor o grupo.
+            </p>
+          </li>
+        </ol>
+
+        <!-- Regra de pontuação -->
+        <div class="score-rule" role="table" aria-label="Tabela de pontuação">
+          <div class="score-item" role="row">
+            <span class="score-pts" role="cell">+2</span>
+            <span class="score-label" role="cell">maioria</span>
+          </div>
+          <div class="score-sep" role="separator" aria-hidden="true"></div>
+          <div class="score-item" role="row">
+            <span class="score-pts" role="cell">+1</span>
+            <span class="score-label" role="cell">empate</span>
+          </div>
+          <div class="score-sep" role="separator" aria-hidden="true"></div>
+          <div class="score-item" role="row">
+            <span class="score-pts" role="cell">0</span>
+            <span class="score-label" role="cell">minoria</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de jogo (lado direito — simulação CSS-only) -->
+      <div class="how-right">
+        <div class="game-card" aria-hidden="true">
+
+          <!-- Metade branca (voto BRANCO) -->
+          <div class="gc-half gc-half--white">
+            <span class="gc-vote-label">Branco</span>
+            <span class="gc-arrow">↑</span>
+          </div>
+
+          <!-- Pergunta centralizada -->
+          <div class="gc-center">
+            <span class="gc-prefix">É coisa de...</span>
+            <p class="gc-question">Pizza com abacaxi</p>
+          </div>
+
+          <!-- Metade preta (voto PRETO) -->
+          <div class="gc-half gc-half--black">
+            <span class="gc-arrow">↓</span>
+            <span class="gc-vote-label">Preto</span>
+          </div>
+
+          <!-- Hint para desktop -->
+          <span class="gc-hint">passe o mouse para votar</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ DOWNLOAD ══════════════════════════════════ -->
+  <section class="download" id="download" aria-label="Download">
+    <p class="download-eyebrow">Disponível agora</p>
+    <h2 class="download-title">Baixe e comece<br />a jogar.</h2>
+    <p class="download-desc">
+      <strong>Android</strong> — você é o host.<br />
+      Os convidados só precisam do navegador.
+    </p>
+    <div class="download-actions">
+      <a class="btn btn--primary btn--large"
+         href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Baixar APK Android
+      </a>
+      <a class="link-releases"
+         href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest"
+         target="_blank" rel="noopener">
+        ver todos os releases&nbsp;↗
+      </a>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FOOTER ════════════════════════════════════ -->
+  <footer>
+    <p>
+      Preto ou Branco — projeto open source ·
+      <a href="https://github.com/SergioLNeves/preto-ou-branco"
+         target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </footer>
+
+</body>
+</html>
