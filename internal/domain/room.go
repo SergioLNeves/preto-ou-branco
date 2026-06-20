@@ -8,6 +8,24 @@ import (
 
 const MaxRoomParticipants = 32
 
+// RoomDifficulty represents the intensity level chosen for a game room.
+type RoomDifficulty string
+
+const (
+	DifficultyLeve   RoomDifficulty = "leve"
+	DifficultyMedio  RoomDifficulty = "medio"
+	DifficultyAcido  RoomDifficulty = "acido"
+	DifficultyPesado RoomDifficulty = "pesado"
+)
+
+// ValidDifficulties is the set of accepted difficulty values.
+var ValidDifficulties = map[RoomDifficulty]bool{
+	DifficultyLeve:   true,
+	DifficultyMedio:  true,
+	DifficultyAcido:  true,
+	DifficultyPesado: true,
+}
+
 var (
 	ErrRoomNotFound         = fmt.Errorf("room not found")
 	ErrRoomFull             = fmt.Errorf("room is full")
@@ -45,6 +63,7 @@ type Room struct {
 	ID            string
 	HostUserID    string
 	QuestionCount int
+	Difficulty    RoomDifficulty
 	Phase         RoomPhase
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -81,16 +100,20 @@ type RoomVote struct {
 // DTOs
 
 type CreateRoomRequest struct {
-	QuestionCount int `json:"question_count"`
+	QuestionCount int    `json:"question_count"`
+	Difficulty    string `json:"difficulty"`
+	Emoji         string `json:"emoji"`
 }
 
 type UpdateRoomSettingsRequest struct {
-	QuestionCount int `json:"question_count"`
+	QuestionCount int    `json:"question_count"`
+	Difficulty    string `json:"difficulty"`
 }
 
 type JoinRoomRequest struct {
 	RoomID   string `json:"room_id"`
 	Username string `json:"username"`
+	Emoji    string `json:"emoji"`
 }
 
 type SubmitRoomVoteRequest struct {
@@ -120,6 +143,7 @@ type RoomState struct {
 	RoomID        string                    `json:"room_id"`
 	Phase         RoomPhase                 `json:"phase"`
 	QuestionCount int                       `json:"question_count"`
+	Difficulty    RoomDifficulty            `json:"difficulty"`
 	MyVotedCount  int                       `json:"my_voted_count"`
 	Participants  []RoomParticipantResponse `json:"participants"`
 	Questions     []RoomQuestionResponse    `json:"questions"`
@@ -165,7 +189,7 @@ type RoomRepository interface {
 	CreateRoom(ctx context.Context, room *Room) error
 	FindRoomByID(ctx context.Context, id string) (*Room, error)
 	UpdateRoom(ctx context.Context, room *Room) error
-	UpdateRoomQuestionCount(ctx context.Context, roomID string, count int) error
+	UpdateRoomSettings(ctx context.Context, roomID string, count int, difficulty RoomDifficulty) error
 	DeleteRoom(ctx context.Context, roomID string) error
 	CountParticipants(ctx context.Context, roomID string) (int, error)
 	AddParticipant(ctx context.Context, p *RoomParticipant) error

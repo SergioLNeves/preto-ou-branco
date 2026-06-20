@@ -81,6 +81,7 @@ func (s *RoomService) buildState(ctx context.Context, room *domain.Room, viewer 
 		RoomID:        room.ID,
 		Phase:         room.Phase,
 		QuestionCount: room.QuestionCount,
+		Difficulty:    room.Difficulty,
 		MyVotedCount:  myVotedCount,
 		Participants:  pResp,
 		Questions:     qResp,
@@ -114,6 +115,14 @@ func (s *RoomService) CloseRoom(ctx context.Context, roomID, hostUserID string) 
 
 var validQuestionCounts = map[int]bool{3: true, 10: true, 20: true, 30: true, 50: true}
 
+func normalizeDifficulty(d string) domain.RoomDifficulty {
+	diff := domain.RoomDifficulty(d)
+	if domain.ValidDifficulties[diff] {
+		return diff
+	}
+	return domain.DifficultyLeve
+}
+
 func (s *RoomService) UpdateRoomSettings(ctx context.Context, roomID, hostUserID string, req domain.UpdateRoomSettingsRequest) error {
 	room, err := s.repo.FindRoomByID(ctx, roomID)
 	if err != nil {
@@ -125,15 +134,42 @@ func (s *RoomService) UpdateRoomSettings(ctx context.Context, roomID, hostUserID
 	if room.Phase != domain.PhaseLobby {
 		return domain.ErrPhaseMismatch
 	}
-	if !validQuestionCounts[req.QuestionCount] {
-		req.QuestionCount = 10
+
+	// Resolve new settings: fall back to current values when fields are absent.
+	newCount := req.QuestionCount
+	if !validQuestionCounts[newCount] {
+		newCount = room.QuestionCount
 	}
-	if err := s.repo.UpdateRoomQuestionCount(ctx, roomID, req.QuestionCount); err != nil {
+	newDiff := normalizeDifficulty(req.Difficulty)
+	if req.Difficulty == "" {
+		newDiff = room.Difficulty
+	}
+
+	// Re-select and snapshot questions for the updated settings.
+	questions, err := s.gameSvc.ListRandomQuestions(ctx, newCount, string(newDiff))
+	if err != nil {
 		return err
 	}
+	if len(questions) == 0 {
+		return domain.ErrNoQuestionsAvailable
+	}
+
+	err = s.repo.Transaction(ctx, func(repo domain.RoomRepository) error {
+		if err := repo.DeleteRoomQuestions(ctx, roomID); err != nil {
+			return err
+		}
+		if err := repo.SnapshotQuestions(ctx, roomID, questions); err != nil {
+			return err
+		}
+		return repo.UpdateRoomSettings(ctx, roomID, newCount, newDiff)
+	})
+	if err != nil {
+		return err
+	}
+
 	s.hub.Broadcast(roomID, map[string]any{
 		"type":    "settings_updated",
-		"payload": map[string]any{"question_count": req.QuestionCount},
+		"payload": map[string]any{"question_count": newCount, "difficulty": string(newDiff)},
 	})
 	return nil
 }
@@ -142,8 +178,9 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 	if !validQuestionCounts[req.QuestionCount] {
 		req.QuestionCount = 10
 	}
+	difficulty := normalizeDifficulty(req.Difficulty)
 
-	questions, err := s.gameSvc.ListRandomQuestions(ctx, req.QuestionCount)
+	questions, err := s.gameSvc.ListRandomQuestions(ctx, req.QuestionCount, string(difficulty))
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +193,7 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 		ID:            uuid.New().String(),
 		HostUserID:    hostUserID,
 		QuestionCount: req.QuestionCount,
+		Difficulty:    difficulty,
 		Phase:         domain.PhaseLobby,
 		CreatedAt:     now,
 		UpdatedAt:     now,
@@ -168,12 +206,16 @@ func (s *RoomService) CreateRoom(ctx context.Context, hostUserID, hostUsername s
 		if err := repo.SnapshotQuestions(ctx, room.ID, questions); err != nil {
 			return err
 		}
+		hostEmoji := req.Emoji
+		if hostEmoji == "" {
+			hostEmoji = domain.EmojiPool[0]
+		}
 		p := &domain.RoomParticipant{
 			ID:         uuid.New().String(),
 			RoomID:     room.ID,
 			UserID:     &hostUserID,
 			Username:   hostUsername,
-			Emoji:      domain.EmojiPool[0],
+			Emoji:      hostEmoji,
 			JoinedAt:   now,
 			LastSeenAt: now,
 		}
@@ -229,7 +271,10 @@ func (s *RoomService) JoinRoom(ctx context.Context, req domain.JoinRoomRequest, 
 	}
 
 	now := time.Now().UTC()
-	emoji := domain.EmojiPool[count%len(domain.EmojiPool)]
+	emoji := req.Emoji
+	if emoji == "" {
+		emoji = domain.EmojiPool[count%len(domain.EmojiPool)]
+	}
 
 	p := &domain.RoomParticipant{
 		ID:         uuid.New().String(),
@@ -378,7 +423,7 @@ func (s *RoomService) RestartRoom(ctx context.Context, roomID, hostUserID string
 		return domain.ErrPhaseMismatch
 	}
 
-	questions, err := s.gameSvc.ListRandomQuestions(ctx, room.QuestionCount)
+	questions, err := s.gameSvc.ListRandomQuestions(ctx, room.QuestionCount, string(room.Difficulty))
 	if err != nil {
 		return err
 	}
