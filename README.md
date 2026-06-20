@@ -1,270 +1,157 @@
-# Preto ou Branco
+<div align="center">
 
-Jogo multiplayer de perguntas onde os jogadores votam **preto** ou **branco** em situações do cotidiano e descobrem o que o grupo pensa.
+# 🖤 Preto ou Branco 🤍
 
-O host inicia uma sala, compartilha o link (ou QR code), e os convidados entram pelo browser — sem instalar nada. O jogo roda inteiramente no dispositivo do host: sem servidor externo, sem nuvem.
+**Multiplayer de perguntas para jogar com os amigos — sem cadastro, sem conta, sem nuvem.**
 
----
+[📥 Baixar para Android](https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk) · [🌐 Página do jogo](https://sergiolneves.github.io/preto-ou-branco/) · [📦 Ver releases](https://github.com/SergioLNeves/preto-ou-branco/releases/latest)
 
-## Arquitetura
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Host (desktop Wails  ou  Android Capacitor)        │
-│                                                     │
-│  React/Vite ─── HTTP/WS ──► Echo (Go, :8080)       │
-│                              │                      │
-│                         SQLite (GORM)               │
-│                              │                      │
-│                    Cloudflare Quick Tunnel           │
-│                         https://*.trycloudflare.com │
-└──────────────────────────┬──────────────────────────┘
-                           │  URL pública
-                    ┌──────▼──────┐
-                    │  Convidados │  (qualquer browser)
-                    └─────────────┘
-```
-
-- **Desktop**: app Wails — binário único para Linux/macOS/Windows.
-- **Android**: app Capacitor com o servidor Go embutido como AAR (gomobile).
-- **Convidados**: abrem o link ou escaneiam o QR code — nenhum app necessário.
+</div>
 
 ---
 
-## Pré-requisitos
+## O que é?
 
-### Todos os targets
+Preto ou Branco é um jogo de perguntas multiplayer onde **não existe resposta certa**.
 
-| Ferramenta | Versão mínima | Instalação |
-|---|---|---|
-| Go | 1.22+ | https://go.dev/dl |
-| Node | 18+ | https://nodejs.org |
-| pnpm | 8+ | `npm i -g pnpm` |
-
-### Somente desktop (Wails)
-
-| Ferramenta | Instalação |
-|---|---|
-| Wails CLI | `go install github.com/wailsapp/wails/v2/cmd/wails@latest` |
-| Dependências do sistema | `wails doctor` lista o que falta |
-
-### Somente Android (Capacitor + gomobile)
-
-| Ferramenta | Instalação |
-|---|---|
-| Android Studio + SDK | https://developer.android.com/studio |
-| Android NDK r25c+ | Android Studio → SDK Manager → SDK Tools → NDK |
-| gomobile | `go install golang.org/x/mobile/cmd/gomobile@latest && gomobile init` |
-| `ANDROID_NDK_HOME` | variável de ambiente apontando para o NDK |
+Para cada situação do dia a dia, cada jogador decide: isso é coisa de **Preto** ou coisa de **Branco**? Pontua quem souber o que a maioria do grupo vai pensar. É um jogo de consenso, de conhecer os amigos, de descobrir que alguém do grupo acha que colocar abacaxi em pizza é coisa de Branco.
 
 ---
 
-## Desktop (Wails)
+## 🎮 Como jogar
 
-### Desenvolvimento
+### 1 · Host cria a sala
+Quem vai hospedar abre o app Android, toca em **Hospedar** e configura a sala: quantidade de perguntas (10, 20, 30 ou 50) e nível de dificuldade.
 
-```bash
-# Instala dependências do frontend
-cd frontend && pnpm install && cd ..
+### 2 · Amigos entram pelo navegador
+O app gera um **link** e um **QR code** na hora. Os outros jogadores escaneiam ou abrem o link no celular ou computador — **sem instalar nada, sem criar conta**. Qualquer navegador funciona.
 
-# Inicia com hot-reload (frontend Vite + backend Go)
-wails dev
-```
+### 3 · Todo mundo vota ao mesmo tempo
+Todos recebem a mesma pergunta. Cada jogador vota:
+- **Arrastar o card para cima** → Branco
+- **Arrastar o card para baixo** → Preto
+- No desktop: clicar na metade superior ou inferior da tela
 
-A janela do app abre automaticamente. Qualquer mudança em `frontend/src/` recarrega na hora; mudanças em arquivos Go reiniciam o binário.
+A sala avança quando todo mundo votar.
 
-### Build de produção
-
-```bash
-wails build
-# Binário gerado em: build/bin/preto-ou-branco (Linux/macOS) ou .exe (Windows)
-```
+### 4 · Pódio no final
+Quando as perguntas acabam, a sala revela o placar com um pódio animado. Cada pergunta é exibida com os votos de cada um — a conversa rola sozinha.
 
 ---
 
-## Android (Capacitor + gomobile)
+## 📋 Regras de pontuação
 
-O build mobile tem três etapas independentes que podem ser feitas na ordem abaixo.
+Não existe gabarito. O que vale é **estar de acordo com a maioria do grupo**:
 
-### Etapa 1 — Baixar o binário cloudflared para Android (build local)
+| Resultado da pergunta | Pontos |
+|---|:---:|
+| ✅ Você votou com a maioria | **+2** |
+| 🤝 Empate (mesmo número de cada) | **+1 para todos** |
+| ❌ Você votou com a minoria | **0** |
 
-O tunnel Cloudflare roda como processo nativo dentro do app. O binário precisa estar em `mobile/android/app/src/main/assets/` antes de compilar o APK.
+Quanto mais você conhece o grupo, mais você pontua.
 
-```bash
-# ARM64 (a grande maioria dos Android modernos)
-curl -L -o mobile/android/app/src/main/assets/cloudflared-android-arm64 \
-  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64
+**Banco de perguntas:** 480 perguntas divididas em 4 categorias — Moda, Música, Aventura e Comportamento — e 4 níveis de dificuldade: Leve, Médio, Ácido e Pesado. A cada rodada, as perguntas são sorteadas.
 
-# ARMv7 (dispositivos mais antigos — opcional)
-curl -L -o mobile/android/app/src/main/assets/cloudflared-android-arm \
-  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm
-```
-
-> **Por que isso não é automático?** Android tem restrições de SELinux sobre quais diretórios permitem execução de binários. O Kotlin extrai o arquivo de `assets/` para `filesDir` (executável) em tempo de execução via `MobilePlugin.extractCloudflaredBinary()`. O Go só recebe o caminho depois da extração.
-
-### Jeito mais simples — GitHub Actions + Releases
-
-Se você quer evitar Android Studio, use o workflow `.github/workflows/android-release.yml`.
-Ele roda com **JDK 21**, que é o necessário para o build Android atual.
-
-1. Crie uma tag de release, por exemplo `v1.0.2`, e faça push.
-2. O GitHub Actions baixa o `cloudflared`, gera `preto.aar`, monta o APK e publica o arquivo em **Releases**.
-3. Baixe o `.apk` da release no celular e instale.
-
-Se preferir rodar pela interface do GitHub, use **Actions → Android Release → Run workflow** e informe a tag da release.
-
-### Etapa 2 — Gerar o AAR (biblioteca Go para Android)
-
-O código Go em `pkg/mobile/` é compilado para um AAR via gomobile e copiado para os `libs` do projeto Android.
-
-```bash
-# Builda o frontend (pnpm build) e compila o AAR (requer NDK configurado
-# e dependências do frontend instaladas: cd frontend && pnpm install)
-make aar
-# Saída: build/preto.aar
-
-# Copia para o projeto Android
-cp build/preto.aar mobile/android/app/libs/preto.aar
-```
-
-Se der erro de NDK não encontrado:
-
-```bash
-export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/<versão>
-make aar
-```
-
-O que o AAR exporta (chamado pelo Kotlin via `mobile.Mobile.*`):
-
-| Função Go | Assinatura Kotlin |
-|---|---|
-| `StartServer(dbPath, port)` | `Mobile.startServer(dbPath: String, port: Long)` |
-| `StopServer()` | `Mobile.stopServer()` |
-| `StartTunnel(cloudflaredPath)` | `Mobile.startTunnel(path: String): String` |
-| `StopTunnel()` | `Mobile.stopTunnel()` |
-| `GetServerStatus()` | `Mobile.getServerStatus(): String` (JSON) |
-
-### Etapa 3 — Sincronização Capacitor
-
-O frontend já foi buildado pelo `make aar` (Etapa 2). Se alterou o frontend
-depois disso, rode `cd frontend && pnpm build` novamente antes de sincronizar.
-
-```bash
-# Copia o dist para os assets Android
-cd mobile && npx cap sync android
-```
-
-### Abrir no Android Studio
-
-```bash
-cd mobile && npx cap open android
-```
-
-No Android Studio: **Run ▶** (emulador API 30+ ou dispositivo físico com USB debugging ativo).
-
-### Build do APK direto pela linha de comando
-
-```bash
-cd mobile/android
-./gradlew assembleDebug
-# APK em: mobile/android/app/build/outputs/apk/debug/app-debug.apk
-```
+**Jogadores:** de 2 a 32 por sala.
 
 ---
 
-## Fluxo do host mobile (como funciona em runtime)
+## 📥 Baixar e instalar
 
-1. App abre → tela inicial "Hospedar / Entrar"
-2. "Hospedar" → `MobilePlugin.startServer()` dispara o `HostService` (Foreground Service com notificação persistente)
-3. `HostService.onStartCommand` chama `Mobile.startServer(filesDir + "/app.db", 8080)` — Go sobe Echo + SQLite + WebSocket hub
-4. Dashboard → "Multiplayer" → `hostBridge.startTunnel()` → `MobilePlugin.startTunnel()` → Kotlin extrai `cloudflared-android-arm64` de assets para `filesDir`, passa o path para `Mobile.startTunnel(path)` — Go executa o binário e aguarda a URL Cloudflare (até 45s)
-5. URL retornada → lobby da sala exibe QR code + link copiável
-6. Convidados escaneiam o QR ou abrem o link no browser
-7. Ao fechar a sala: `stopTunnel()` → `stopServer()` → `stopService()`
+Baixe o APK e instale diretamente no Android:
+
+### **[⬇ Baixar APK (Android)](https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk)**
+
+> O Android pode pedir permissão para "instalar apps de fontes desconhecidas". Isso acontece porque o app não está na Play Store — é um projeto pessoal de código aberto. O código-fonte está todo aqui neste repositório para quem quiser conferir.
 
 ---
 
-## Estrutura do projeto
+## 🔒 Privacidade — seus dados não saem do celular
+
+Essa é a parte mais importante, então vou ser bem direto:
+
+**Este jogo não tem servidor meu.** Não existe nenhuma máquina minha — ou de terceiros — guardando suas respostas, histórico de partidas, nome de usuário ou qualquer outra informação. Absolutamente nada é coletado.
+
+Veja como funciona na prática:
+
+**🏠 O celular do host vira o servidor do jogo**
+Quando você toca em "Hospedar", o app cria um mini-servidor de jogo dentro do próprio celular. É temporário — quando o app fecha, o servidor para e a sala some. Funciona exatamente como qualquer jogo local, só que acessível por link.
+
+**💾 O banco de dados fica no celular do host**
+Os votos e pontuações são salvos num banco de dados local no celular de quem criou a sala. Não vai para a internet. Quando a sala é encerrada, aquele arquivo pode ser deletado normalmente com o app.
+
+**🌐 O link funciona via Cloudflare Tunnel — mas sem guardar nada**
+Para que os amigos acessem o servidor do celular host pela internet, o app usa uma tecnologia gratuita do Cloudflare chamada Quick Tunnel. Ela cria um endereço temporário (algo como `abc123.trycloudflare.com`) que funciona como uma "ponte" — os dados *passam* por ela durante o jogo, mas não ficam armazenados em lugar nenhum. Quando a sala fecha, esse endereço deixa de existir.
+
+**🔍 O código é aberto e pode ser verificado**
+Todo o código-fonte está neste repositório. Qualquer desenvolvedor pode ler e confirmar que não existe nenhuma chamada enviando dados para servidores externos. Não há analytics, não há rastreamento, não há nada além do jogo em si.
+
+---
+
+## 🛠 Como funciona por dentro
+
+Para quem tem curiosidade técnica ou quer contribuir:
+
+```
+Celular do host
+  ├── App Android  (Capacitor + React/Vite)
+  │     └── A interface que o host vê e usa
+  │
+  ├── Servidor embutido  (Go + Echo, porta 8080)
+  │     ├── API REST — cria salas, recebe votos, calcula pontuação
+  │     ├── WebSocket — transmite eventos em tempo real para todos
+  │     └── SQLite — guarda a partida localmente enquanto dura
+  │
+  └── Cloudflare Quick Tunnel
+        └── Gera um link público temporário para o servidor do celular
+              ↓
+        Convidados abrem o link no navegador (qualquer dispositivo)
+```
+
+- **Go** cuida de toda a lógica do jogo no backend: criar salas, registrar votos, calcular quem está com a maioria, transmitir o placar em tempo real.
+- **React** é a interface — tanto para o host (dentro do app Android) quanto para os convidados (no navegador deles, servida pelo próprio app host).
+- **SQLite** guarda os dados da partida localmente. Nenhum banco de dados externo é usado.
+- **gomobile** compila o código Go para uma biblioteca Android nativa (`.aar`), permitindo que o Kotlin inicie e pare o servidor de dentro do app.
+
+### Estrutura
 
 ```
 preto-ou-branco/
-├── main.go                    # Entry point Wails
-├── app.go                     # Bootstrap desktop (Echo + SQLite + tunnel bindings)
-├── Makefile                   # make dev | make build | make aar
-├── wails.json                 # Config Wails
-│
 ├── internal/
-│   ├── domain/                # Interfaces e tipos de domínio
-│   ├── service/               # Lógica de negócio (room, game, auth)
-│   ├── repository/            # Acesso ao banco (GORM)
-│   ├── handler/               # Handlers HTTP Echo (room, auth)
-│   ├── middleware/            # BearerAuth, RoomIdentity
-│   ├── realtime/              # Hub WebSocket (broadcast de eventos)
-│   ├── storage/sqlite/        # Open, OpenAt, migrations, seed
-│   ├── bindings/              # Bindings Wails (AuthApp, GameApp, ServerApp)
-│   └── mobile/                # Implementação do host mobile (server + tunnel)
-│
-├── pkg/                       # Pacotes públicos
-│   └── mobile/                # Fachada gomobile (StartServer, StartTunnel…)
-│
-├── frontend/                  # React + TypeScript + Vite + Tailwind
-│   └── src/
-│       ├── lib/
-│       │   ├── host-bridge.ts # Abstração Wails / Capacitor / browser
-│       │   └── server-url.ts  # Base URL do backend
-│       ├── routes/            # TanStack Router (dashboard, sala, settings…)
-│       ├── components/        # UI (RoomLobby, QuestionCard, QR modal…)
-│       └── infra/             # Queries e mutations (TanStack Query)
-│
-└── mobile/                    # App Capacitor (Android)
-    ├── capacitor.config.ts
-    └── android/
-        └── app/src/main/
-            ├── assets/        # ← colocar cloudflared-android-arm64 aqui
-            ├── java/com/pretoobranco/app/
-            │   ├── MainActivity.kt
-            │   ├── MobilePlugin.kt   # Plugin Capacitor → Go AAR
-            │   └── HostService.kt    # Foreground Service
-            └── libs/          # ← copiar preto.aar aqui (make aar)
+│   ├── domain/        # Tipos e regras (sala, fase, votação)
+│   ├── service/       # Lógica de negócio
+│   ├── repository/    # Acesso ao banco (GORM + SQLite)
+│   ├── handler/       # Endpoints HTTP (Echo)
+│   └── realtime/      # Hub WebSocket
+├── frontend/          # React + Vite + Tailwind (interface)
+├── mobile/android/    # App Capacitor (Kotlin)
+├── pkg/mobile/        # API Go exposta via gomobile
+├── docs/              # Landing page (GitHub Pages)
+└── .github/workflows/ # CI/CD — build e publicação do APK
+```
+
+### Build
+
+```bash
+# Desktop (Wails)
+wails dev        # desenvolvimento com hot-reload
+wails build      # gera o binário final
+
+# Android — via GitHub Actions (recomendado)
+# Crie uma tag v* e faça push — o CI gera e publica o APK automaticamente.
+
+# Android — build local
+make aar         # compila frontend + gera preto.aar (requer NDK + gomobile)
+cp build/preto.aar mobile/android/app/libs/preto.aar
+cd mobile && npx cap sync android
+cd mobile/android && ./gradlew assembleDebug
 ```
 
 ---
 
-## Variáveis de ambiente relevantes
+<div align="center">
 
-| Variável | Quando usar |
-|---|---|
-| `ANDROID_NDK_HOME` | Caminho para o NDK ao rodar `make aar` |
-| `CGO_ENABLED=1` | Já setado pelo gomobile; necessário para `mattn/go-sqlite3` |
+Feito com Go, React e muita vontade de jogar com os amigos. 🖤🤍
 
----
-
-## Troubleshooting
-
-**`make aar` falha com "NDK not found"**
-```bash
-# Verifique o caminho do NDK instalado no Android Studio
-ls $HOME/Android/Sdk/ndk/
-export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/25.2.9519653
-make aar
-```
-
-**SQLite não compila para Android**
-Troque o driver CGO por puro Go em `go.mod`:
-```bash
-go get modernc.org/sqlite
-# Em internal/storage/sqlite/sqlite.go, troque o import:
-# "gorm.io/driver/sqlite" → "gorm.io/driver/sqlite" (modernc)
-```
-
-**App fecha a sala quando a tela trava**
-O `HostService` precisa da notificação persistente para sobreviver. Se o Android matar o processo mesmo assim, ative "Ignorar otimizações de bateria" nas configurações do sistema para o app.
-
-**Tunnel demora ou falha**
-O cloudflared faz uma requisição de saída na porta 443. Redes corporativas ou hotspots com firewall restritivo podem bloquear. Teste com dados móveis.
-
-**`wails dev` abre janela em branco**
-```bash
-cd frontend && pnpm install
-wails dev
-```
+</div>
