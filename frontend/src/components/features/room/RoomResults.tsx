@@ -9,9 +9,6 @@ interface Props {
   state: RoomState;
 }
 
-const STEP_INTERVAL = 2200;
-const WINNER_DELAY = 1500;
-
 export function RoomResults({ results, state }: Props) {
   const navigate = useNavigate();
   const { steps, scoreboard } = results;
@@ -24,16 +21,17 @@ export function RoomResults({ results, state }: Props) {
   const [phase, setPhase] = useState<"revealing" | "winner">(
     steps.length === 0 ? "winner" : "revealing",
   );
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const winnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gainedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const started = useRef(false);
 
   const advance = useCallback(() => {
     setCurrentStep((prev) => {
       const next = prev + 1;
       if (next >= steps.length) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        winnerTimeoutRef.current = setTimeout(() => setPhase("winner"), WINNER_DELAY);
+        // Past the last step — go straight to winner.
+        if (winnerTimeoutRef.current) clearTimeout(winnerTimeoutRef.current);
+        setPhase("winner");
         return prev;
       }
       const step = steps[next];
@@ -55,14 +53,27 @@ export function RoomResults({ results, state }: Props) {
     });
   }, [steps]);
 
+  // Show the first step immediately on mount (no click needed for step 0).
+  useEffect(() => {
+    if (!started.current && phase === "revealing" && steps.length > 0) {
+      started.current = true;
+      advance();
+    }
+  }, [advance, phase, steps.length]);
+
+  // Keyboard support: Space / Enter also advances.
   useEffect(() => {
     if (phase !== "revealing") return;
-    timerRef.current = setInterval(advance, STEP_INTERVAL);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    function onKey(e: KeyboardEvent) {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        advance();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [advance, phase]);
 
-  // Clear pending timeouts on unmount — prevents setState-after-unmount when
-  // the host restarts/closes the room mid-reveal.
   useEffect(() => {
     return () => {
       if (winnerTimeoutRef.current) clearTimeout(winnerTimeoutRef.current);
@@ -70,8 +81,8 @@ export function RoomResults({ results, state }: Props) {
     };
   }, []);
 
-  function skipToEnd() {
-    if (timerRef.current) clearInterval(timerRef.current);
+  function skipToEnd(e: React.MouseEvent) {
+    e.stopPropagation();
     if (winnerTimeoutRef.current) clearTimeout(winnerTimeoutRef.current);
     if (gainedTimeoutRef.current) clearTimeout(gainedTimeoutRef.current);
     const finalScores: Record<string, number> = Object.fromEntries(
@@ -82,11 +93,14 @@ export function RoomResults({ results, state }: Props) {
     setPhase("winner");
   }
 
-  const sorted: ScoreboardEntry[] = [...scoreboard].sort(
-    (a, b) => (scores[b.participant_id] ?? 0) - (scores[a.participant_id] ?? 0),
-  );
+  const sorted: ScoreboardEntry[] = [...scoreboard].sort((a, b) => {
+    const diff = (scores[b.participant_id] ?? 0) - (scores[a.participant_id] ?? 0);
+    if (diff !== 0) return diff;
+    return a.username.localeCompare(b.username);
+  });
 
   const step = currentStep >= 0 && currentStep < steps.length ? steps[currentStep] : null;
+  const isLastStep = currentStep === steps.length - 1;
 
   if (phase === "winner") {
     return (
@@ -100,7 +114,13 @@ export function RoomResults({ results, state }: Props) {
   }
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[#0a0a0a] font-sans overflow-hidden">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={advance}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); advance(); } }}
+      className="absolute inset-0 flex flex-col bg-[#0a0a0a] font-sans overflow-hidden cursor-pointer select-none"
+    >
       {/* Skip button */}
       <div className="flex justify-end px-8 pt-6 shrink-0">
         <button
@@ -171,8 +191,35 @@ export function RoomResults({ results, state }: Props) {
           <span className="text-[rgba(245,245,245,0.3)] text-sm tracking-[0.2em] uppercase">Carregando…</span>
         )}
       </div>
+
+      {/* Tap hint */}
+      <div className="pb-6 flex justify-center shrink-0">
+        <span className="text-xs tracking-[0.3em] uppercase text-[rgba(245,245,245,0.25)] animate-pulse">
+          {isLastStep ? "toque para ver o resultado" : "toque para continuar"}
+        </span>
+      </div>
     </div>
   );
+}
+
+interface RankedEntry {
+  entry: ScoreboardEntry;
+  rank: number;
+}
+
+function computeRanks(sorted: ScoreboardEntry[], scores: Record<string, number>): RankedEntry[] {
+  const result: RankedEntry[] = [];
+  let rank = 1;
+  let i = 0;
+  while (i < sorted.length) {
+    const pts = scores[sorted[i].participant_id] ?? 0;
+    let j = i;
+    while (j < sorted.length && (scores[sorted[j].participant_id] ?? 0) === pts) j++;
+    for (let k = i; k < j; k++) result.push({ entry: sorted[k], rank });
+    rank += j - i;
+    i = j;
+  }
+  return result;
 }
 
 interface WinnerProps {
@@ -193,10 +240,14 @@ function WinnerScreen({ sorted, scores, state, onLeave }: WinnerProps) {
   const restartRoom = useRestartRoom(state.room_id);
   const closeRoom = useCloseRoom(state.room_id);
 
-  const first = sorted[0];
-  const second = sorted[1];
-  const third = sorted[2];
-  const rest = sorted.slice(3);
+  const ranked = computeRanks(sorted, scores);
+  const rank1 = ranked.filter((r) => r.rank === 1).map((r) => r.entry);
+  const rank2 = ranked.filter((r) => r.rank === 2).map((r) => r.entry);
+  const rank3 = ranked.filter((r) => r.rank === 3).map((r) => r.entry);
+  const rest = ranked.filter((r) => r.rank > 3);
+
+  const isTie = rank1.length > 1;
+  const title = isTie ? "Empate" : "Vencedor";
 
   return (
     <div
@@ -206,32 +257,56 @@ function WinnerScreen({ sorted, scores, state, onLeave }: WinnerProps) {
       <div className="flex flex-col items-center gap-1">
         <span className="text-xs tracking-[0.5em] uppercase text-[rgba(245,245,245,0.4)]">Fim de jogo</span>
         <h1 className="text-[clamp(36px,6vw,72px)] font-black tracking-[-0.04em] uppercase text-[#f5f5f5] leading-none">
-          Vencedor
+          {title}
         </h1>
       </div>
 
       {/* Podium */}
-      <div className="flex items-end justify-center gap-4 w-full max-w-[560px]">
-        {/* 2nd */}
-        {second && (
-          <PodiumSlot entry={second} pts={scores[second.participant_id] ?? 0} place={2} height="h-28" />
-        )}
-        {/* 1st */}
-        {first && (
-          <PodiumSlot entry={first} pts={scores[first.participant_id] ?? 0} place={1} height="h-40" crown />
-        )}
-        {/* 3rd */}
-        {third && (
-          <PodiumSlot entry={third} pts={scores[third.participant_id] ?? 0} place={3} height="h-20" />
+      <div className="flex flex-col items-center gap-4 w-full max-w-[560px]">
+        {/* 1st place — all tied players side by side */}
+        <div className="flex items-end justify-center gap-4 w-full">
+          {rank1.map((entry) => (
+            <PodiumSlot
+              key={entry.participant_id}
+              entry={entry}
+              pts={scores[entry.participant_id] ?? 0}
+              place={1}
+              height="h-40"
+              crown
+            />
+          ))}
+        </div>
+        {/* 2nd and 3rd */}
+        {(rank2.length > 0 || rank3.length > 0) && (
+          <div className="flex items-end justify-center gap-4 w-full">
+            {rank2.map((entry) => (
+              <PodiumSlot
+                key={entry.participant_id}
+                entry={entry}
+                pts={scores[entry.participant_id] ?? 0}
+                place={2}
+                height="h-28"
+              />
+            ))}
+            {rank3.map((entry) => (
+              <PodiumSlot
+                key={entry.participant_id}
+                entry={entry}
+                pts={scores[entry.participant_id] ?? 0}
+                place={3}
+                height="h-20"
+              />
+            ))}
+          </div>
         )}
       </div>
 
       {/* Rest */}
       {rest.length > 0 && (
         <div className="w-full max-w-[400px] flex flex-col gap-1.5">
-          {rest.map((entry, i) => (
+          {rest.map(({ entry, rank }) => (
             <div key={entry.participant_id} className="flex items-center gap-3 px-4 py-2 border border-[rgba(245,245,245,0.08)]">
-              <span className="text-xs font-black text-[rgba(245,245,245,0.4)] w-4">{i + 4}</span>
+              <span className="text-xs font-black text-[rgba(245,245,245,0.4)] w-4">{rank}</span>
               <span className="text-lg shrink-0">{entry.emoji}</span>
               <span className="flex-1 text-sm font-bold text-[rgba(245,245,245,0.8)] min-w-0 truncate">{entry.username}</span>
               <span className="text-sm font-black text-[rgba(245,245,245,0.6)] tabular-nums">
