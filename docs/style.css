@@ -86,11 +86,13 @@ ol, ul { list-style: none; }
 .btn:active { transform: translateY(0); }
 
 .btn--hero {
-  font-size: 0.9375rem; padding: 0.9375rem 1.875rem;
-  background: var(--ink); color: var(--paper);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  font-size: 0.875rem; padding: 0.875rem 1.75rem;
+  background: #888; color: var(--white);
+  border-radius: 4px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.01em;
 }
-.btn--hero:hover { box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45); }
+.btn--hero:hover { background: #777; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35); }
 
 .btn--download {
   font-size: 1.0625rem; padding: 1.125rem 2.625rem;
@@ -133,7 +135,8 @@ ol, ul { list-style: none; }
 
 .hero-cta {
   position: absolute;
-  bottom: 2.75rem; left: 0; right: 0;
+  top: 50%; left: 0; right: 0;
+  transform: translateY(-50%);
   z-index: 10;
   display: flex; justify-content: center;
   pointer-events: none;
