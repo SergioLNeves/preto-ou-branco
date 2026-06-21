@@ -78,15 +78,6 @@ function DashboardRoute() {
         )}
       </div>
 
-      {/* Bottom link */}
-      <div className="absolute bottom-6 inset-x-0 flex items-center justify-center">
-        <Link
-          to="/"
-          className="text-xs tracking-[0.3em] uppercase text-[#f5f5f5] opacity-60 hover:opacity-90 transition-opacity"
-        >
-          ← Início
-        </Link>
-      </div>
     </div>
   );
 }

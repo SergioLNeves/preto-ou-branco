@@ -9,9 +9,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
+	"gorm.io/gorm"
 
 	"preto-ou-branco/internal/bindings"
 	"preto-ou-branco/internal/domain"
+	"preto-ou-branco/internal/gamedata"
 	"preto-ou-branco/internal/handler"
 	"preto-ou-branco/internal/middleware"
 	"preto-ou-branco/internal/realtime"
@@ -49,7 +51,7 @@ func NewApp(staticFS fs.FS) *App {
 	roomSvc := service.NewRoomService(roomRepo, gameSvc, hub)
 	roomHandler := handler.NewRoomHandler(roomSvc, hub)
 
-	go startHTTPServer(staticFS, authSvc, roomRepo, roomHandler)
+	go startHTTPServer(staticFS, db, authSvc, roomRepo, roomHandler)
 
 	return &App{
 		authApp:   authApp,
@@ -61,6 +63,7 @@ func NewApp(staticFS fs.FS) *App {
 
 func startHTTPServer(
 	staticFS fs.FS,
+	db *gorm.DB,
 	authSvc domain.AuthService,
 	roomRepo domain.RoomRepository,
 	roomHandler *handler.RoomHandler,
@@ -78,7 +81,17 @@ func startHTTPServer(
 	roomIdentity := middleware.RoomIdentity(authSvc, roomRepo)
 	optionalIdentity := middleware.OptionalRoomIdentity(authSvc, roomRepo)
 
+	gamedataHandler := handler.NewGameDataHandler(func(ctx context.Context, baseURL string) (sqlite.ReconcileResult, error) {
+		cats, qs, err := gamedata.LoadFromURL(baseURL)
+		if err != nil {
+			return sqlite.ReconcileResult{}, err
+		}
+		return sqlite.ReconcileGameData(db, cats, qs)
+	})
+
 	v1 := e.Group("/v1")
+	v1.POST("/gamedata/update", gamedataHandler.UpdateGameData, bearerAuth)
+
 	rooms := v1.Group("/rooms")
 	rooms.POST("", roomHandler.CreateRoom, bearerAuth)
 	rooms.POST("/join", roomHandler.JoinRoom, optionalIdentity)

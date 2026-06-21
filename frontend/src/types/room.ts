@@ -1,4 +1,5 @@
 export type RoomPhase = "lobby" | "playing" | "finished";
+export type RoomDifficulty = "leve" | "medio" | "acido" | "pesado";
 
 export interface RoomParticipant {
   id: string;
@@ -17,6 +18,7 @@ export interface RoomState {
   room_id: string;
   phase: RoomPhase;
   question_count: number;
+  difficulty: RoomDifficulty;
   my_voted_count: number;
   participants: RoomParticipant[];
   questions: RoomQuestion[];

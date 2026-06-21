@@ -17,6 +17,7 @@ type QuestionTable struct {
 	ID         string        `gorm:"type:varchar(36);primary_key"`
 	CategoryID string        `gorm:"type:varchar(36);not null;index"`
 	Category   CategoryTable `gorm:"foreignKey:CategoryID;constraint:OnDelete:RESTRICT,OnUpdate:CASCADE"`
+	Difficulty string        `gorm:"type:varchar(16);not null;default:'leve';index"`
 	Text       string        `gorm:"not null"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -50,6 +51,7 @@ type RoomTable struct {
 	ID            string `gorm:"type:varchar(36);primary_key"`
 	HostUserID    string `gorm:"type:varchar(36);not null"`
 	QuestionCount int    `gorm:"not null"`
+	Difficulty    string `gorm:"type:varchar(16);not null;default:'leve'"`
 	Phase         string `gorm:"type:varchar(16);not null;default:'lobby'"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time

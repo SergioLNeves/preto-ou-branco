@@ -26,6 +26,7 @@ func toRoom(r sqlite.RoomTable) *domain.Room {
 		ID:            r.ID,
 		HostUserID:    r.HostUserID,
 		QuestionCount: r.QuestionCount,
+		Difficulty:    domain.RoomDifficulty(r.Difficulty),
 		Phase:         domain.RoomPhase(r.Phase),
 		CreatedAt:     r.CreatedAt,
 		UpdatedAt:     r.UpdatedAt,
@@ -47,10 +48,15 @@ func toParticipant(p sqlite.RoomParticipantTable) *domain.RoomParticipant {
 }
 
 func (r *RoomRepo) CreateRoom(ctx context.Context, room *domain.Room) error {
+	diff := string(room.Difficulty)
+	if diff == "" {
+		diff = string(domain.DifficultyLeve)
+	}
 	row := sqlite.RoomTable{
 		ID:            room.ID,
 		HostUserID:    room.HostUserID,
 		QuestionCount: room.QuestionCount,
+		Difficulty:    diff,
 		Phase:         string(room.Phase),
 		CreatedAt:     room.CreatedAt,
 		UpdatedAt:     room.UpdatedAt,
@@ -107,9 +113,10 @@ func (r *RoomRepo) DeleteRoom(ctx context.Context, roomID string) error {
 	return r.db.WithContext(ctx).Where("id = ?", roomID).Delete(&sqlite.RoomTable{}).Error
 }
 
-func (r *RoomRepo) UpdateRoomQuestionCount(ctx context.Context, roomID string, count int) error {
+func (r *RoomRepo) UpdateRoomSettings(ctx context.Context, roomID string, count int, difficulty domain.RoomDifficulty) error {
 	return r.db.WithContext(ctx).Model(&sqlite.RoomTable{}).Where("id = ?", roomID).Updates(map[string]any{
 		"question_count": count,
+		"difficulty":     string(difficulty),
 		"updated_at":     time.Now().UTC(),
 	}).Error
 }

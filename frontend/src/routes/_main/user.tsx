@@ -1,8 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { meQueryOptions } from "@/infra/auth/queries";
 import { useLogout } from "@/infra/auth/mutations";
+import { apiPost } from "@/lib/api-client";
 import { useEffect, useState } from "react";
+
+interface UpdateResult {
+  added: number;
+  removed: number;
+  skipped: number;
+}
 
 export const Route = createFileRoute("/_main/user")({
   component: UserRoute,
@@ -20,6 +27,34 @@ function UserRoute() {
   const { data: user, isLoading } = useQuery(meQueryOptions);
   const logout = useLogout();
   const [selected, setSelected] = useState<string>(() => localStorage.getItem("user_avatar") ?? "🐶");
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+  const DEFAULT_BD_URL =
+    "https://raw.githubusercontent.com/SergioLNeves/preto-ou-branco/main/internal/gamedata/BD";
+
+  const [bdUrl, setBdUrl] = useState<string>(
+    () => localStorage.getItem("bd_remote_url") ?? DEFAULT_BD_URL,
+  );
+
+  function handleBdUrlChange(value: string) {
+    setBdUrl(value);
+    localStorage.setItem("bd_remote_url", value);
+  }
+
+  const updateBD = useMutation({
+    mutationFn: () => apiPost<UpdateResult>("/v1/gamedata/update", { url: bdUrl }),
+    onSuccess: (data) => {
+      const parts: string[] = [];
+      if (data.added > 0) parts.push(`+${data.added} adicionadas`);
+      if (data.removed > 0) parts.push(`−${data.removed} removidas`);
+      if (parts.length === 0) parts.push("já atualizado");
+      setUpdateMsg(parts.join(" · "));
+      setTimeout(() => setUpdateMsg(null), 4000);
+    },
+    onError: () => {
+      setUpdateMsg("Erro ao buscar dados remotos");
+      setTimeout(() => setUpdateMsg(null), 4000);
+    },
+  });
 
   useEffect(() => {
     if (!isLoading && !user) void navigate({ to: "/entrar" });
@@ -76,6 +111,33 @@ function UserRoute() {
             {emoji}
           </button>
         ))}
+      </div>
+
+      {/* Atualizar banco de perguntas */}
+      <div className="flex flex-col items-center gap-3 w-full max-w-[340px]">
+        <p className="text-[10px] tracking-[0.3em] uppercase text-[rgba(245,245,245,0.4)] self-start">
+          URL do repositório de perguntas
+        </p>
+        <input
+          type="url"
+          value={bdUrl}
+          onChange={(e) => handleBdUrlChange(e.target.value)}
+          placeholder="https://raw.githubusercontent.com/user/repo/main/BD"
+          className="w-full bg-transparent border border-[rgba(245,245,245,0.15)] text-[rgba(245,245,245,0.7)] text-[11px] px-4 py-3 outline-none focus:border-[rgba(245,245,245,0.5)] placeholder:text-[rgba(245,245,245,0.2)] transition-colors"
+        />
+        <button
+          type="button"
+          onClick={() => updateBD.mutate()}
+          disabled={updateBD.isPending || !bdUrl.trim()}
+          className="w-full px-8 py-3 text-xs font-extrabold tracking-[0.25em] uppercase border border-[rgba(245,245,245,0.2)] text-[rgba(245,245,245,0.6)] hover:border-[rgba(245,245,245,0.7)] hover:text-[rgba(245,245,245,0.9)] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {updateBD.isPending ? "Atualizando..." : "Atualizar perguntas"}
+        </button>
+        {updateMsg && (
+          <p className="text-[10px] tracking-[0.2em] uppercase text-[rgba(245,245,245,0.5)]">
+            {updateMsg}
+          </p>
+        )}
       </div>
 
       {/* Logout */}

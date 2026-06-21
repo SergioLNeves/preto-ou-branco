@@ -24,6 +24,7 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"gorm.io/gorm"
 
+	"preto-ou-branco/internal/gamedata"
 	"preto-ou-branco/internal/handler"
 	"preto-ou-branco/internal/middleware"
 	"preto-ou-branco/internal/realtime"
@@ -88,7 +89,16 @@ func StartServer(dbPath string, port int) error {
 	roomIdentity := middleware.RoomIdentity(authSvc, roomRepo)
 	optionalIdentity := middleware.OptionalRoomIdentity(authSvc, roomRepo)
 
+	gamedataHandler := handler.NewGameDataHandler(func(ctx context.Context, baseURL string) (sqlite.ReconcileResult, error) {
+		cats, qs, err := gamedata.LoadFromURL(baseURL)
+		if err != nil {
+			return sqlite.ReconcileResult{}, err
+		}
+		return sqlite.ReconcileGameData(db, cats, qs)
+	})
+
 	v1 := e.Group("/v1")
+	v1.POST("/gamedata/update", gamedataHandler.UpdateGameData, bearerAuth)
 
 	auth := v1.Group("/auth")
 	auth.POST("/register", authHandler.Register)

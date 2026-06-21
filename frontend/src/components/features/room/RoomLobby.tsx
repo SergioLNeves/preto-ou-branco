@@ -8,11 +8,20 @@ import { meQueryOptions } from "@/infra/auth/queries";
 import { useStartRoom, useUpdateRoomSettings, useCloseRoom } from "@/infra/room/mutations";
 import { ParticipantAvatar } from "./ParticipantAvatar";
 import { hostBridge, type ServerStatus } from "@/lib/host-bridge";
-import type { RoomState } from "@/types/room";
+import type { RoomDifficulty, RoomState } from "@/types/room";
 
 interface Props {
   state: RoomState;
 }
+
+const DIFFICULTY_LABELS: Record<RoomDifficulty, string> = {
+  leve: "Leve",
+  medio: "Médio",
+  acido: "Ácido",
+  pesado: "Pesado",
+};
+
+const DIFFICULTY_ORDER: RoomDifficulty[] = ["leve", "medio", "acido", "pesado"];
 
 export function RoomLobby({ state }: Props) {
   const navigate = useNavigate();
@@ -211,33 +220,64 @@ export function RoomLobby({ state }: Props) {
 
 
       {/* Settings */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-4">
         <span className="text-xs tracking-[0.4em] uppercase text-[rgba(245,245,245,0.4)]">Configurações</span>
+
         {isHost ? (
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.5)]">Perguntas</span>
-            <div className="flex gap-2">
-              {[10, 20, 30, 50].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  disabled={updateSettings.isPending}
-                  onClick={() => updateSettings.mutate(n)}
-                  className={`w-12 py-2 text-sm font-extrabold tracking-[0.1em] border-2 transition-colors cursor-pointer disabled:opacity-40 ${
-                    state.question_count === n
-                      ? "border-[#f5f5f5] bg-[#f5f5f5] text-[#0a0a0a]"
-                      : "border-[rgba(245,245,245,0.25)] text-[rgba(245,245,245,0.5)] hover:border-[rgba(245,245,245,0.6)] hover:text-[rgba(245,245,245,0.8)]"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
+          <div className="flex flex-col items-center gap-3">
+            {/* Perguntas */}
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.5)]">Perguntas</span>
+              <div className="flex gap-2">
+                {[10, 20, 30, 50].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    disabled={updateSettings.isPending}
+                    onClick={() => updateSettings.mutate({ question_count: n })}
+                    className={`w-12 py-2 text-sm font-extrabold tracking-[0.1em] border-2 transition-colors cursor-pointer disabled:opacity-40 ${
+                      state.question_count === n
+                        ? "border-[#f5f5f5] bg-[#f5f5f5] text-[#0a0a0a]"
+                        : "border-[rgba(245,245,245,0.25)] text-[rgba(245,245,245,0.5)] hover:border-[rgba(245,245,245,0.6)] hover:text-[rgba(245,245,245,0.8)]"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Nível */}
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.5)]">Nível</span>
+              <div className="flex gap-2">
+                {DIFFICULTY_ORDER.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    disabled={updateSettings.isPending}
+                    onClick={() => updateSettings.mutate({ difficulty: d })}
+                    className={`px-3 py-2 text-xs font-extrabold tracking-[0.08em] border-2 transition-colors cursor-pointer disabled:opacity-40 ${
+                      state.difficulty === d
+                        ? "border-[#f5f5f5] bg-[#f5f5f5] text-[#0a0a0a]"
+                        : "border-[rgba(245,245,245,0.25)] text-[rgba(245,245,245,0.5)] hover:border-[rgba(245,245,245,0.6)] hover:text-[rgba(245,245,245,0.8)]"
+                    }`}
+                  >
+                    {DIFFICULTY_LABELS[d]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 px-4 py-2 border border-[rgba(245,245,245,0.12)]">
+          <div className="flex items-center gap-4 px-4 py-2 border border-[rgba(245,245,245,0.12)]">
             <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.6)]">Perguntas</span>
             <span className="text-sm font-black text-[#f5f5f5]">{state.question_count}</span>
+            <span className="text-[rgba(245,245,245,0.3)]">·</span>
+            <span className="text-xs tracking-[0.2em] uppercase text-[rgba(245,245,245,0.6)]">Nível</span>
+            <span className="text-sm font-black text-[#f5f5f5]">
+              {DIFFICULTY_LABELS[state.difficulty] ?? state.difficulty}
+            </span>
           </div>
         )}
       </div>

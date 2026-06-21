@@ -15,11 +15,11 @@ func NewGameService(repo domain.GameRepository) *GameService {
 	return &GameService{repo: repo}
 }
 
-func (s *GameService) ListRandomQuestions(ctx context.Context, limit int) ([]domain.QuestionResponse, error) {
+func (s *GameService) ListRandomQuestions(ctx context.Context, limit int, difficulty string) ([]domain.QuestionResponse, error) {
 	if limit <= 0 || limit > 50 {
 		limit = 30
 	}
-	questions, err := s.repo.ListRandomQuestions(ctx, limit)
+	questions, err := s.repo.ListRandomQuestions(ctx, limit, difficulty)
 	if err != nil {
 		return nil, fmt.Errorf("list random questions: %w", err)
 	}
@@ -28,6 +28,7 @@ func (s *GameService) ListRandomQuestions(ctx context.Context, limit int) ([]dom
 		responses = append(responses, domain.QuestionResponse{
 			ID:         q.ID.String(),
 			CategoryID: q.CategoryID.String(),
+			Difficulty: q.Difficulty,
 			Text:       q.Text,
 		})
 	}
