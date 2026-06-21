@@ -7,7 +7,6 @@ import { useSubmitRoomVote, useJoinRoom, useCloseRoom } from "@/infra/room/mutat
 import { roomResultsQueryOptions, roomKeys } from "@/infra/room/queries";
 import { hostBridge } from "@/lib/host-bridge";
 import { ApiError } from "@/lib/api-client";
-import type { ConnectionState } from "@/lib/room-ws";
 import { RoomLobby } from "@/components/features/room/RoomLobby";
 import { RoomResults } from "@/components/features/room/RoomResults";
 import { WaitingForOthers } from "@/components/features/room/WaitingForOthers";
@@ -23,7 +22,7 @@ function RoomPage() {
   const { roomId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: state, isLoading, error, connectionState } = useRoom(roomId);
+  const { data: state, isLoading, error } = useRoom(roomId);
   const submitVote = useSubmitRoomVote(roomId);
   const joinRoom = useJoinRoom();
   const closeRoom = useCloseRoom(roomId);
@@ -133,8 +132,6 @@ function RoomPage() {
 
   return (
     <div className="game-root fixed inset-0 overflow-hidden font-sans bg-[#0a0a0a]">
-      <ConnectionBanner state={connectionState} />
-
       {state.phase === "lobby" && <RoomLobby state={state} />}
 
       {state.phase === "playing" && (() => {
@@ -158,17 +155,6 @@ function RoomPage() {
       })()}
 
       {state.phase === "finished" && <FinishedPhase roomId={roomId} state={state} />}
-    </div>
-  );
-}
-
-// Shown when the WebSocket drops the live connection — the room state still
-// polls every 3s (see useRoom), but events (votes, phase changes) may lag.
-function ConnectionBanner({ state }: { state: ConnectionState }) {
-  if (state !== "reconnecting" && state !== "failed") return null;
-  return (
-    <div className="absolute top-0 inset-x-0 z-40 flex items-center justify-center py-1.5 bg-[rgba(245,245,245,0.08)] text-[rgba(245,245,245,0.7)] text-[10px] font-bold tracking-[0.25em] uppercase">
-      {state === "reconnecting" ? "Reconectando…" : "Conexão em tempo real perdida — atualizando por polling"}
     </div>
   );
 }
