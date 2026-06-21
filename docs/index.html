@@ -5,60 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Preto ou Branco — Jogue com seus amigos</title>
   <meta name="description" content="Multiplayer de perguntas para jogar com amigos. O host roda no Android e os convidados entram pelo navegador — sem instalar nada." />
-
-  <!-- Open Graph -->
   <meta property="og:title"       content="Preto ou Branco" />
   <meta property="og:description" content="Jogue com seus amigos. Perguntas aleatórias. Não leve a sério." />
   <meta property="og:image"       content="./assets/logo-universal.png" />
   <meta property="og:url"         content="https://sergiolneves.github.io/preto-ou-branco/" />
   <meta property="og:type"        content="website" />
   <meta name="twitter:card"       content="summary_large_image" />
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-  <link rel="icon"       type="image/png" href="./assets/logo-universal.png" />
+  <link rel="icon" type="image/png" href="./assets/logo-universal.png" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
 
-  <!-- ═══════════════ NAV ═══════════════════════════════════════ -->
+  <!-- NAV -->
   <nav class="nav">
     <span class="nav-logo">POB</span>
-    <a class="nav-github"
-       href="https://github.com/SergioLNeves/preto-ou-branco"
-       target="_blank" rel="noopener">
-      GitHub&nbsp;↗
+    <a class="nav-cta" href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk">
+      Baixar ↓
     </a>
   </nav>
 
-  <!-- ═══════════════ HERO ══════════════════════════════════════ -->
+  <!-- HERO: split interativo -->
   <section class="hero">
-
     <div class="hero-half hero-half--white">
       <h1 class="hero-word">Preto</h1>
     </div>
     <div class="hero-half hero-half--black">
       <h1 class="hero-word">Branco</h1>
     </div>
-
-    <!-- Badge central -->
     <div class="hero-ou" aria-hidden="true">
       <span class="hero-ou-text">ou</span>
     </div>
-
-    <!-- Subtítulo + CTA -->
     <div class="hero-bottom">
       <p class="hero-sub">
         Jogue com seus amigos.<br />
         Perguntas aleatórias.<br />
         Não leve a sério.
       </p>
-      <a class="btn btn--primary"
+      <a class="btn btn--hero"
          href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2.5"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -68,180 +56,184 @@
         Baixar para Android
       </a>
     </div>
-
   </section>
 
-  <!-- ═══════════════ STATS ════════════════════════════════════ -->
+  <!-- SHOWCASE: mockup do celular -->
+  <section class="showcase">
+    <div class="showcase-inner">
+
+      <div class="showcase-copy">
+        <p class="eyebrow">Como funciona</p>
+        <h2 class="showcase-title">O host roda.<br />Todo mundo joga.</h2>
+        <p class="showcase-body">
+          Um celular Android serve o jogo para a sala inteira. Os convidados
+          escaneiam o QR code e entram pelo browser — sem instalar nada,
+          sem criar conta.
+        </p>
+
+        <ol class="showcase-steps">
+          <li>
+            <span class="step-n">1</span>
+            Abra o app e crie uma sala
+          </li>
+          <li>
+            <span class="step-n">2</span>
+            Compartilhe o link ou QR code
+          </li>
+          <li>
+            <span class="step-n">3</span>
+            Todos entram — sem instalar nada
+          </li>
+          <li>
+            <span class="step-n">4</span>
+            Votem e descubram quem conhece o grupo
+          </li>
+        </ol>
+      </div>
+
+      <!-- Mockup CSS do celular -->
+      <div class="phone-wrap" aria-hidden="true">
+        <div class="phone-glow"></div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+
+            <header class="ps-header">
+              <div class="ps-header-row">
+                <span class="ps-room">Sala do Sergio</span>
+                <span class="ps-round">Rodada 3</span>
+              </div>
+              <span class="ps-count">6 jogadores</span>
+            </header>
+
+            <div class="ps-card">
+              <div class="ps-half ps-half--white">
+                <span class="ps-vote">Branco</span>
+                <span class="ps-arrow">↑</span>
+              </div>
+              <div class="ps-pill">
+                <span class="ps-prefix">É coisa de...</span>
+                <p class="ps-question">Pizza com abacaxi</p>
+              </div>
+              <div class="ps-half ps-half--black">
+                <span class="ps-arrow">↓</span>
+                <span class="ps-vote">Preto</span>
+              </div>
+            </div>
+
+            <footer class="ps-footer">
+              <div class="ps-timer"><div class="ps-timer-fill"></div></div>
+              <div class="ps-avatars">
+                <span class="ps-av">A</span>
+                <span class="ps-av">C</span>
+                <span class="ps-av">M</span>
+                <span class="ps-av ps-av--you">V</span>
+                <span class="ps-av">R</span>
+                <span class="ps-av">L</span>
+              </div>
+            </footer>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- O JOGO: regras + pontuação visual -->
+  <section class="game-rules">
+    <div class="game-rules-inner">
+
+      <div class="gr-copy">
+        <p class="eyebrow">O jogo</p>
+        <h2 class="gr-title">Não existe<br />resposta certa.</h2>
+        <p class="gr-body">
+          Preto ou Branco — sem meio termo. Pontua quem souber o que a maioria
+          vai votar. Leia a sala, jogue junto, vença.
+        </p>
+        <div class="cats">
+          <span class="cat">Moda</span>
+          <span class="cat">Música</span>
+          <span class="cat">Aventura</span>
+          <span class="cat">Comportamento</span>
+        </div>
+      </div>
+
+      <div class="gr-visual">
+        <div class="score-vis">
+          <div class="sv-row">
+            <span class="sv-pts">+2</span>
+            <div class="sv-track"><div class="sv-fill sv-fill--full"></div></div>
+            <span class="sv-tag">maioria</span>
+          </div>
+          <div class="sv-row">
+            <span class="sv-pts sv-pts--mid">+1</span>
+            <div class="sv-track"><div class="sv-fill sv-fill--half"></div></div>
+            <span class="sv-tag sv-tag--dim">empate</span>
+          </div>
+          <div class="sv-row">
+            <span class="sv-pts sv-pts--zero">0</span>
+            <div class="sv-track"><div class="sv-fill sv-fill--none"></div></div>
+            <span class="sv-tag sv-tag--dim">minoria</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- STATS -->
   <section class="stats" aria-label="Números do jogo">
     <div class="stats-inner">
       <div class="stat">
-        <span class="stat-number">480</span>
-        <span class="stat-label">perguntas</span>
+        <span class="stat-n">480</span>
+        <span class="stat-l">perguntas</span>
       </div>
-      <div class="stat-divider" aria-hidden="true"></div>
+      <div class="stat-div" aria-hidden="true"></div>
       <div class="stat">
-        <span class="stat-number">4</span>
-        <span class="stat-label">categorias</span>
+        <span class="stat-n">4</span>
+        <span class="stat-l">categorias</span>
       </div>
-      <div class="stat-divider" aria-hidden="true"></div>
+      <div class="stat-div" aria-hidden="true"></div>
       <div class="stat">
-        <span class="stat-number">32</span>
-        <span class="stat-label">jogadores</span>
+        <span class="stat-n">32</span>
+        <span class="stat-l">jogadores</span>
       </div>
-      <div class="stat-divider" aria-hidden="true"></div>
+      <div class="stat-div" aria-hidden="true"></div>
       <div class="stat">
-        <span class="stat-number">0</span>
-        <span class="stat-label">apps para instalar</span>
+        <span class="stat-n">0</span>
+        <span class="stat-l">apps para instalar</span>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════ FEATURES ══════════════════════════════════ -->
-  <section class="features" aria-label="Destaques do jogo">
-    <div class="features-inner">
-
-      <div class="feature">
-        <p class="feature-label">O jogo</p>
-        <h3 class="feature-headline">Toda pergunta tem só duas respostas.</h3>
-        <p class="feature-body">
-          Preto ou Branco. Sem meio termo, sem "depende". Cada rodada você vota
-          e descobre o que o grupo pensa de verdade.
-        </p>
-      </div>
-
-      <div class="feature feature--dark">
-        <p class="feature-label">A pontuação</p>
-        <h3 class="feature-headline">Pontua quem lê a sala.</h3>
-        <p class="feature-body">
-          Não existe resposta certa — existe a resposta da maioria. Quem
-          conhece o grupo vence.
-        </p>
-        <div class="score-strip" role="table" aria-label="Tabela de pontuação">
-          <span class="score-num" role="cell">+2</span>
-          <span class="score-txt" role="cell">maioria</span>
-          <span class="score-sep" aria-hidden="true">·</span>
-          <span class="score-num" role="cell">+1</span>
-          <span class="score-txt" role="cell">empate</span>
-          <span class="score-sep" aria-hidden="true">·</span>
-          <span class="score-num score-num--zero" role="cell">0</span>
-          <span class="score-txt" role="cell">minoria</span>
-        </div>
-      </div>
-
-      <div class="feature">
-        <p class="feature-label">Multiplayer</p>
-        <h3 class="feature-headline">Um instala. Todos jogam.</h3>
-        <p class="feature-body">
-          O host roda o servidor no Android. Os convidados entram pelo
-          navegador — até 32 pessoas na mesma sala.
-        </p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══════════════ COMO FUNCIONA ═════════════════════════════ -->
-  <section class="how" aria-label="Como funciona">
-    <div class="how-inner">
-
-      <div class="how-left">
-        <p class="how-eyebrow">Como funciona</p>
-        <h2 class="how-title">Simples assim.</h2>
-
-        <div class="steps" aria-label="Passo a passo">
-          <div class="step">
-            <div class="step-num" aria-hidden="true">1</div>
-            <div class="step-content">
-              <strong>Host cria a sala</strong> no app Android e compartilha
-              um link ou QR code.
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" aria-hidden="true">2</div>
-            <div class="step-content">
-              <strong>Amigos entram pelo navegador</strong> — sem precisar
-              instalar nada.
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" aria-hidden="true">3</div>
-            <div class="step-content">
-              Todos recebem a mesma pergunta e votam:
-              <strong>Preto</strong> ou <strong>Branco</strong>.
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" aria-hidden="true">4</div>
-            <div class="step-content">
-              <strong>Quem votar com a maioria pontua.</strong>
-              No fim, um pódio revela quem conhecia melhor o grupo.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card de jogo (simulação CSS-only) -->
-      <div class="how-right">
-        <div class="game-card" aria-hidden="true">
-
-          <div class="gc-half gc-half--white">
-            <span class="gc-vote-label">Branco</span>
-            <span class="gc-arrow">↑</span>
-          </div>
-
-          <div class="gc-center">
-            <span class="gc-prefix">É coisa de...</span>
-            <p class="gc-question">Pizza com abacaxi</p>
-          </div>
-
-          <div class="gc-half gc-half--black">
-            <span class="gc-arrow">↓</span>
-            <span class="gc-vote-label">Preto</span>
-          </div>
-
-          <span class="gc-hint">passe o mouse para votar</span>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══════════════ DOWNLOAD ══════════════════════════════════ -->
+  <!-- DOWNLOAD -->
   <section class="download" id="download" aria-label="Download">
     <div class="download-inner">
-      <div class="download-text">
-        <p class="download-eyebrow">Disponível agora</p>
-        <h2 class="download-title">Baixe e comece<br />a jogar.</h2>
-        <p class="download-desc">
-          <strong>Android</strong> — você é o host.<br />
-          Os convidados só precisam do navegador.
-        </p>
-      </div>
-      <div class="download-actions">
-        <a class="btn btn--paper btn--large"
-           href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Baixar APK Android
-        </a>
-        <a class="link-releases"
-           href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest"
-           target="_blank" rel="noopener">
-          ver todos os releases&nbsp;↗
-        </a>
-      </div>
+      <p class="eyebrow eyebrow--dim">Disponível agora · Android · grátis</p>
+      <h2 class="download-title">Baixe e comece<br />a jogar.</h2>
+      <a class="btn btn--download"
+         href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest/download/preto-android.apk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Baixar APK Android
+      </a>
+      <a class="download-link"
+         href="https://github.com/SergioLNeves/preto-ou-branco/releases/latest"
+         target="_blank" rel="noopener">
+        GitHub Releases ↗
+      </a>
     </div>
   </section>
 
-  <!-- ═══════════════ FOOTER ════════════════════════════════════ -->
   <footer>
     <p>
-      Preto ou Branco — projeto open source ·
+      Preto ou Branco — open source ·
       <a href="https://github.com/SergioLNeves/preto-ou-branco"
          target="_blank" rel="noopener">GitHub</a>
     </p>
